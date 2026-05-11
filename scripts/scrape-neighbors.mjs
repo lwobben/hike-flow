@@ -2,7 +2,10 @@ import { fetch as undiciFetch, Agent } from "undici";
 import { writeFile, readFile } from "fs/promises";
 import { load } from "cheerio";
 import vm from "vm";
+import { fileURLToPath } from "url";
+import { resolve, dirname } from "path";
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const agent = new Agent({ connect: { rejectUnauthorized: false } });
 
 function parseMinutes(str) {
@@ -40,7 +43,7 @@ async function scrapeNeighbors(hutId) {
 }
 
 export async function buildGraph() {
-  const jsText = await readFile("huettendata.js", "utf8");
+  const jsText = await readFile(resolve(ROOT, "huettendata.js"), "utf8");
   const sandbox = { hD: {} };
   vm.createContext(sandbox);
   vm.runInContext(jsText, sandbox, { timeout: 5000 });
@@ -55,6 +58,14 @@ export async function buildGraph() {
     await new Promise((r) => setTimeout(r, 150));
   }
 
-  await writeFile("graph.json", JSON.stringify(edges, null, 2), "utf8");
-  return edges;
+  await writeFile(
+    resolve(ROOT, "graph.json"),
+    JSON.stringify(edges, null, 2),
+    "utf8",
+  );
+  console.log(`graph.json written — ${edges.length} edges`);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  await buildGraph();
 }
