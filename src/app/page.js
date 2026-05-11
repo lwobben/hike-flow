@@ -1,5 +1,9 @@
 import Image from "next/image";
 import styles from "./page.module.css";
+import HikingRoute from "./components/HikingRoute";
+import Huts from "./components/Huts";
+import HutsMap from "./components/HutsMapClient";
+import HutsNodes from "./components/HutsNodes";
 
 export default function Home() {
   return (
@@ -7,18 +11,31 @@ export default function Home() {
       <main className={styles.main}>
         <Image
           className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
+          src="/hike-icon.jpg"
+          alt="Hike icon"
+          width={150}
+          height={150}
           priority
         />
+
+        <h2>Welcome to HikeFlow!</h2>
+
+        <p>Discover stunning mountain routes and plan your next adventure.</p>
+
         <ol>
-          <li>
-            Get started by editing <code>src/app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
+          <li>Choose your trail</li>
+          <li>Reserve cozy huts along the way</li>
+          <li>Pack your gear</li>
+          <li>Hit the trail!</li>
         </ol>
+
+        <HutsMap />
+
+        <HutsNodes />
+
+        <HikingRoute />
+
+        <Huts />
 
         <div className={styles.ctas}>
           <a
@@ -34,7 +51,7 @@ export default function Home() {
               width={20}
               height={20}
             />
-            Deploy now
+            Go to A
           </a>
           <a
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
@@ -42,7 +59,7 @@ export default function Home() {
             rel="noopener noreferrer"
             className={styles.secondary}
           >
-            Read our docs
+            Visit B
           </a>
         </div>
       </main>
