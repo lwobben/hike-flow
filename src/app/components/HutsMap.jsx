@@ -73,6 +73,7 @@ function formatMinutes(minutes) {
 }
 
 export default function HutsMap() {
+  const containerRef = useRef(null);
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const hutsRef = useRef([]);
@@ -108,9 +109,16 @@ export default function HutsMap() {
     );
   }, []);
 
+  // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
   const addEdgeLayer = useCallback(() => {
     const map = mapRef.current;
-    if (!map || !mapLoadedRef.current || !graphRef.current) return;
+    if (
+      !map ||
+      !mapLoadedRef.current ||
+      !graphRef.current ||
+      hutsRef.current.length === 0
+    )
+      return;
 
     const edges = graphRef.current;
     const hutsById = hutsByIdRef.current;
@@ -193,6 +201,7 @@ export default function HutsMap() {
         const toHut = hutsByIdRef.current[to];
         const fwd = edgesByKeyRef.current[`${from}-${to}`];
         const rev = edgesByKeyRef.current[`${to}-${from}`];
+        const rect = containerRef.current.getBoundingClientRect();
         setPopup({
           type: "edge",
           fromName: fromHut?.name ?? from,
@@ -201,8 +210,8 @@ export default function HutsMap() {
           toElevation: toHut?.elevation ?? null,
           fwdMinutes: fwd ?? null,
           revMinutes: rev ?? null,
-          x: e.originalEvent.clientX,
-          y: e.originalEvent.clientY,
+          x: e.originalEvent.clientX - rect.left,
+          y: e.originalEvent.clientY - rect.top,
         });
       });
 
@@ -274,6 +283,7 @@ export default function HutsMap() {
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: "relative",
         width: 800,
@@ -315,6 +325,7 @@ export default function HutsMap() {
             key={node.id}
             onClick={(e) => {
               e.stopPropagation();
+              const rect = containerRef.current.getBoundingClientRect();
               setPopup({
                 type: "hut",
                 name: node.data.name,
@@ -322,8 +333,8 @@ export default function HutsMap() {
                 link: node.data.link,
                 gebirgsgruppe: node.data.gebirgsgruppe,
                 bundesland: node.data.bundesland,
-                x: e.clientX,
-                y: e.clientY,
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
               });
             }}
             style={{
@@ -346,7 +357,7 @@ export default function HutsMap() {
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            position: "fixed",
+            position: "absolute",
             top: popup.y + 10,
             left: popup.x + 10,
             background: "#fff",
