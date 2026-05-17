@@ -83,31 +83,10 @@ export default function HutsMap() {
   const mapLoadedRef = useRef(false);
   const graphRef = useRef(null);
   const animFrameRef = useRef(null);
-  const [nodes, setNodes] = useState([]);
+  const [huts, setHuts] = useState([]);
+  const [, forceUpdate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null);
-
-  const projectHuts = useCallback(() => {
-    const map = mapRef.current;
-    if (!map || hutsRef.current.length === 0) return;
-    setNodes(
-      hutsRef.current.map((h, i) => {
-        const { x, y } = map.project([h.lon, h.lat]);
-        return {
-          id: String(i),
-          position: { x: x - 8, y: y - 8 },
-          data: {
-            name: h.name,
-            elevation: h.elevation,
-            link: h.link,
-            gebirgsgruppe: h.gebirgsgruppe,
-            bundesland: h.bundesland,
-            color: groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
-          },
-        };
-      }),
-    );
-  }, []);
 
   // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
   const addEdgeLayer = useCallback(() => {
@@ -233,11 +212,11 @@ export default function HutsMap() {
         groupColorMap.current = buildGroupColorMap(valid);
         hutsRef.current = valid;
         hutsByIdRef.current = Object.fromEntries(valid.map((h) => [h.id, h]));
-        projectHuts();
+        setHuts(valid);
         addEdgeLayer();
       })
       .finally(() => setLoading(false));
-  }, [projectHuts, addEdgeLayer]);
+  }, [addEdgeLayer]);
 
   // Fetch graph
   useEffect(() => {
@@ -267,10 +246,10 @@ export default function HutsMap() {
 
     map.on("load", () => {
       mapLoadedRef.current = true;
-      projectHuts();
+      forceUpdate((t) => t + 1);
       addEdgeLayer();
     });
-    map.on("move", projectHuts);
+    map.on("move", () => forceUpdate((t) => t + 1));
     map.on("click", () => setPopup(null));
 
     mapRef.current = map;
@@ -279,7 +258,7 @@ export default function HutsMap() {
       map.remove();
       mapRef.current = null;
     };
-  }, [projectHuts, addEdgeLayer]);
+  }, [addEdgeLayer]);
 
   return (
     <div
@@ -320,37 +299,40 @@ export default function HutsMap() {
           overflow: "hidden",
         }}
       >
-        {nodes.map((node) => (
-          <div
-            key={node.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              const rect = containerRef.current.getBoundingClientRect();
-              setPopup({
-                type: "hut",
-                name: node.data.name,
-                elevation: node.data.elevation,
-                link: node.data.link,
-                gebirgsgruppe: node.data.gebirgsgruppe,
-                bundesland: node.data.bundesland,
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-              });
-            }}
-            style={{
-              position: "absolute",
-              left: node.position.x,
-              top: node.position.y,
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              background: node.data.color,
-              border: "2px solid #fff",
-              cursor: "pointer",
-              pointerEvents: "auto",
-            }}
-          />
-        ))}
+        {mapRef.current && huts.map((h, i) => {
+          const { x, y } = mapRef.current.project([h.lon, h.lat]);
+          return (
+            <div
+              key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = containerRef.current.getBoundingClientRect();
+                setPopup({
+                  type: "hut",
+                  name: h.name,
+                  elevation: h.elevation,
+                  link: h.link,
+                  gebirgsgruppe: h.gebirgsgruppe,
+                  bundesland: h.bundesland,
+                  x: e.clientX - rect.left,
+                  y: e.clientY - rect.top,
+                });
+              }}
+              style={{
+                position: "absolute",
+                left: x - 8,
+                top: y - 8,
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                background: groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
+                border: "2px solid #fff",
+                cursor: "pointer",
+                pointerEvents: "auto",
+              }}
+            />
+          );
+        })}
       </div>
 
       {popup && (
