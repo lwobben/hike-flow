@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { resolve, dirname } from "path";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const DATA = resolve(ROOT, "data");
 const agent = new Agent({ connect: { rejectUnauthorized: false } });
 
 function parseMinutes(str) {
@@ -43,7 +44,7 @@ async function scrapeNeighbors(hutId) {
 }
 
 export async function buildGraph() {
-  const jsText = await readFile(resolve(ROOT, "huettendata.js"), "utf8");
+  const jsText = await readFile(resolve(DATA, "huettendata.js"), "utf8");
   const sandbox = { hD: {} };
   vm.createContext(sandbox);
   vm.runInContext(jsText, sandbox, { timeout: 5000 });
@@ -59,7 +60,7 @@ export async function buildGraph() {
   }
 
   await writeFile(
-    resolve(ROOT, "graph.json"),
+    resolve(DATA, "graph.json"),
     JSON.stringify(edges, null, 2),
     "utf8",
   );

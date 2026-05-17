@@ -4,13 +4,13 @@ Data-fetching scripts that populate the static files the app reads at runtime.
 
 ## Overview
 
-| Script                 | Output           | Description                                         |
-| ---------------------- | ---------------- | --------------------------------------------------- |
-| `fetch-huts.mjs`       | `huettendata.js` | Fetches the full hut list from the Alpenverein API  |
-| `scrape-neighbors.mjs` | `graph.json`     | Scrapes each hut's neighbor links and walking times |
-| `scrape.mjs`           | both             | Runs both scripts in sequence (recommended)         |
+| Script                 | Output                                  | Description                                                                         |
+| ---------------------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `fetch-huts.mjs`       | `data/huettendata.js`, `data/huts.json` | Fetches the raw hut list from the Alpenverein website and parses it into our format |
+| `scrape-neighbors.mjs` | `data/graph.json`                       | Scrapes each hut's neighbor links and walking times                                 |
+| `scrape.mjs`           | all of the above                        | Runs both scripts in sequence (recommended)                                         |
 
-Both output files are written to the project root.
+All output files are written to `data/`.
 
 ## Usage
 
@@ -26,7 +26,7 @@ npm run scrape
 # Fetch hut list only
 node scripts/fetch-huts.mjs
 
-# Scrape neighbor graph only (requires huettendata.js to exist)
+# Scrape neighbor graph only (requires data/huettendata.js to exist)
 node scripts/scrape-neighbors.mjs
 ```
 
