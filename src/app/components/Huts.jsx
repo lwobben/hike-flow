@@ -43,11 +43,6 @@ export default function Huts() {
               <span style={{ color: "#666", fontSize: "0.9em" }}>
                 ({hut.elevation})
               </span>
-            )}{" "}
-            {hut.lat && hut.lon && (
-              <span style={{ color: "#666", fontSize: "0.9em" }}>
-                ({hut.lat}, {hut.lon})
-              </span>
             )}
           </li>
         ))}

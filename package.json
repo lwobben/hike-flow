@@ -14,8 +14,7 @@
     "maplibre-gl": "^5.24.0",
     "next": "15.5.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "reactflow": "^11.11.4"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
