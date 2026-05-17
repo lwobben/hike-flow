@@ -21,17 +21,21 @@ export async function fetchHuts() {
   vm.createContext(sandbox);
   vm.runInContext(jsText, sandbox, { timeout: 1000 });
 
-  const huts = Object.entries(sandbox.hD).map(([id, hut]) => ({
-    id,
-    name: hut?.name ?? null,
-    elevation: hut?.hoehe ? `${hut.hoehe} m` : null,
-    link: `https://www.alpenverein.at/huetten/index.php?huette_nr=${id}`,
-    phone: hut?.huette_telefon || null,
-    lat: hut?.lat ?? null,
-    lon: hut?.lon ?? null,
-    gebirgsgruppe: sandbox.gD[hut?.gebirgsgruppe]?.name ?? null,
-    bundesland: sandbox.rD[hut?.bundesland]?.name ?? null,
-  }));
+  const huts = Object.entries(sandbox.hD).map(([id, hut]) => {
+    const reservationMatch = hut?.reservierung?.match(/hut_id=(\d+)/);
+    return {
+      id,
+      name: hut?.name ?? null,
+      elevation: hut?.hoehe ? `${hut.hoehe} m` : null,
+      link: `https://www.alpenverein.at/huetten/index.php?huette_nr=${id}`,
+      phone: hut?.huette_telefon || null,
+      lat: hut?.lat ?? null,
+      lon: hut?.lon ?? null,
+      gebirgsgruppe: sandbox.gD[hut?.gebirgsgruppe]?.name ?? null,
+      bundesland: sandbox.rD[hut?.bundesland]?.name ?? null,
+      hutReservationId: reservationMatch ? reservationMatch[1] : null,
+    };
+  });
 
   await writeFile(resolve(DATA, "huts.json"), JSON.stringify(huts, null, 2), "utf8");
   console.log(`data/huts.json written — ${huts.length} huts`);

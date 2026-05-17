@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Switch } from "@/components/ui/switch";
 const PALETTE = [
   "#e6194b",
   "#3cb44b",
@@ -87,6 +88,13 @@ export default function HutsMap() {
   const [, forceUpdate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null);
+  const [showAvailability, setShowAvailability] = useState(false);
+
+  const defaultFrom = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+  const defaultTo = new Date(new Date().getFullYear(), new Date().getMonth() + 2, 1);
+  const toInputValue = (d) => d.toISOString().slice(0, 10);
+  const [dateFrom, setDateFrom] = useState(toInputValue(defaultFrom));
+  const [dateTo, setDateTo] = useState(toInputValue(defaultTo));
 
   // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
   const addEdgeLayer = useCallback(() => {
@@ -261,6 +269,32 @@ export default function HutsMap() {
   }, [addEdgeLayer]);
 
   return (
+    <div style={{ width: 800 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+          <Switch
+            checked={showAvailability}
+            onCheckedChange={setShowAvailability}
+          />
+          Show availability
+        </label>
+        {showAvailability && (
+          <>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+            <span>–</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </>
+        )}
+      </div>
+
     <div
       ref={containerRef}
       style={{
@@ -314,6 +348,7 @@ export default function HutsMap() {
                   link: h.link,
                   gebirgsgruppe: h.gebirgsgruppe,
                   bundesland: h.bundesland,
+                  hutReservationId: h.hutReservationId ?? null,
                   x: e.clientX - rect.left,
                   y: e.clientY - rect.top,
                 });
@@ -372,10 +407,24 @@ export default function HutsMap() {
                   href={popup.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: "#0070f3" }}
+                  style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
                 >
                   View hut page →
                 </a>
+              )}
+              {popup.hutReservationId ? (
+                <a
+                  href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#0070f3", display: "block" }}
+                >
+                  View availability →
+                </a>
+              ) : (
+                <div style={{ color: "#999", fontSize: "0.85em" }}>
+                  Availability not listed online
+                </div>
               )}
             </>
           ) : (
@@ -401,6 +450,7 @@ export default function HutsMap() {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }
