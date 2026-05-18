@@ -1,7 +1,7 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 import Huts from "./components/Huts";
-import HutsMap from "./components/HutsMapClient";
+import HutsMap from "./components/HutsMap/HutsMapClient";
 
 export default function Home() {
   return (

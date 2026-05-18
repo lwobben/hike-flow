@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Switch } from "@/components/ui/switch";
+import HutPopup from "./HutPopup";
 const PALETTE = [
   "#e6194b",
   "#3cb44b",
@@ -66,12 +67,6 @@ function curvedCoords(from, to) {
   return points;
 }
 
-function formatMinutes(minutes) {
-  if (minutes == null) return "unknown";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ""}`.trim() : `${m}m`;
-}
 
 export default function HutsMap() {
   const containerRef = useRef(null);
@@ -90,11 +85,46 @@ export default function HutsMap() {
   const [popup, setPopup] = useState(null);
   const [showAvailability, setShowAvailability] = useState(false);
 
-  const defaultFrom = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-  const defaultTo = new Date(new Date().getFullYear(), new Date().getMonth() + 2, 1);
-  const toInputValue = (d) => d.toISOString().slice(0, 10);
+  const defaultFrom = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1,
+    1,
+  );
+  const defaultTo = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() + 2,
+    1,
+  );
+  const toInputValue = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const [dateFrom, setDateFrom] = useState(toInputValue(defaultFrom));
   const [dateTo, setDateTo] = useState(toInputValue(defaultTo));
+
+  useEffect(() => {
+    if (!popup || popup.type !== "hut" || !popup.hutReservationId) return;
+    if (!showAvailability) {
+      setPopup((prev) => prev ? { ...prev, availability: null } : prev);
+      return;
+    }
+    setPopup((prev) => prev ? { ...prev, availability: { loading: true } } : prev);
+    const id = popup.hutReservationId;
+    fetch(`/api/availability?hutId=${id}`)
+      .then((res) => res.json())
+      .then((data) =>
+        setPopup((prev) =>
+          prev?.hutReservationId === id
+            ? { ...prev, availability: { loading: false, data } }
+            : prev,
+        ),
+      )
+      .catch(() =>
+        setPopup((prev) =>
+          prev?.hutReservationId === id
+            ? { ...prev, availability: { loading: false, error: true } }
+            : prev,
+        ),
+      );
+  }, [showAvailability]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
   const addEdgeLayer = useCallback(() => {
@@ -268,15 +298,38 @@ export default function HutsMap() {
     };
   }, [addEdgeLayer]);
 
+  const effectivePopup = (() => {
+    if (!popup) return null;
+    if (popup.type !== "hut" || !mapRef.current) return popup;
+    const { x, y } = mapRef.current.project([popup.lon, popup.lat]);
+    const el = containerRef.current;
+    if (el && (x < 0 || x > el.offsetWidth || y < 0 || y > el.offsetHeight)) return null;
+    return { ...popup, x, y };
+  })();
+
   return (
     <div style={{ width: 800 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          marginBottom: 8,
+        }}
+      >
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            cursor: "pointer",
+          }}
+        >
           <Switch
             checked={showAvailability}
             onCheckedChange={setShowAvailability}
           />
-          Show availability
+          Show availabilities
         </label>
         {showAvailability && (
           <>
@@ -284,6 +337,7 @@ export default function HutsMap() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
+              style={{ marginLeft: 50 }}
             />
             <span>–</span>
             <input
@@ -295,162 +349,114 @@ export default function HutsMap() {
         )}
       </div>
 
-    <div
-      ref={containerRef}
-      style={{
-        position: "relative",
-        width: 800,
-        height: 600,
-        border: "1px solid #ddd",
-      }}
-    >
-      <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
-
-      {loading && (
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            left: 8,
-            background: "rgba(255,255,255,0.8)",
-            padding: "4px 8px",
-            borderRadius: 4,
-            fontSize: "0.85em",
-          }}
-        >
-          Loading huts…
-        </div>
-      )}
-
       <div
+        ref={containerRef}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-          overflow: "hidden",
+          position: "relative",
+          width: 800,
+          height: 600,
+          border: "1px solid #ddd",
         }}
       >
-        {mapRef.current && huts.map((h, i) => {
-          const { x, y } = mapRef.current.project([h.lon, h.lat]);
-          return (
-            <div
-              key={i}
-              onClick={(e) => {
-                e.stopPropagation();
-                const rect = containerRef.current.getBoundingClientRect();
-                setPopup({
-                  type: "hut",
-                  name: h.name,
-                  elevation: h.elevation,
-                  link: h.link,
-                  gebirgsgruppe: h.gebirgsgruppe,
-                  bundesland: h.bundesland,
-                  hutReservationId: h.hutReservationId ?? null,
-                  x: e.clientX - rect.left,
-                  y: e.clientY - rect.top,
-                });
-              }}
-              style={{
-                position: "absolute",
-                left: x - 8,
-                top: y - 8,
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                background: groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
-                border: "2px solid #fff",
-                cursor: "pointer",
-                pointerEvents: "auto",
-              }}
-            />
-          );
-        })}
-      </div>
+        <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
 
-      {popup && (
+        {loading && (
+          <div
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 8,
+              background: "rgba(255,255,255,0.8)",
+              padding: "4px 8px",
+              borderRadius: 4,
+              fontSize: "0.85em",
+            }}
+          >
+            Loading huts…
+          </div>
+        )}
+
         <div
-          onClick={(e) => e.stopPropagation()}
           style={{
             position: "absolute",
-            top: popup.y + 10,
-            left: popup.x + 10,
-            background: "#fff",
-            border: "1px solid #ccc",
-            borderRadius: 6,
-            padding: "8px 12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            zIndex: 1000,
-            pointerEvents: "auto",
-            cursor: "default",
-            minWidth: 180,
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+            overflow: "hidden",
           }}
         >
-          {popup.type === "hut" ? (
-            <>
-              <div style={{ fontWeight: "bold", marginBottom: 4 }}>
-                {popup.name}
-                {popup.elevation ? ` (${popup.elevation})` : ""}
-              </div>
-              {popup.gebirgsgruppe && (
+          {mapRef.current &&
+            huts.map((h, i) => {
+              const { x, y } = mapRef.current.project([h.lon, h.lat]);
+              return (
                 <div
-                  style={{ color: "#666", fontSize: "0.85em", marginBottom: 4 }}
-                >
-                  {popup.gebirgsgruppe}
-                  {popup.bundesland ? ` (${popup.bundesland})` : ""}
-                </div>
-              )}
-              {popup.link && (
-                <a
-                  href={popup.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
-                >
-                  View hut page →
-                </a>
-              )}
-              {popup.hutReservationId ? (
-                <a
-                  href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#0070f3", display: "block" }}
-                >
-                  View availability →
-                </a>
-              ) : (
-                <div style={{ color: "#999", fontSize: "0.85em" }}>
-                  Availability not listed online
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div style={{ fontWeight: "bold", marginBottom: 6 }}>
-                Walking times
-              </div>
-              <div style={{ fontSize: "0.9em", marginBottom: 2 }}>
-                {popup.fromName}
-                {popup.fromElevation ? ` (${popup.fromElevation})` : ""} →{" "}
-                {popup.toName}
-                {popup.toElevation ? ` (${popup.toElevation})` : ""}:{" "}
-                <strong>{formatMinutes(popup.fwdMinutes)}</strong>
-              </div>
-              <div style={{ fontSize: "0.9em" }}>
-                {popup.toName}
-                {popup.toElevation ? ` (${popup.toElevation})` : ""} →{" "}
-                {popup.fromName}
-                {popup.fromElevation ? ` (${popup.fromElevation})` : ""}:{" "}
-                <strong>{formatMinutes(popup.revMinutes)}</strong>
-              </div>
-            </>
-          )}
+                  key={i}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const newPopup = {
+                      type: "hut",
+                      name: h.name,
+                      elevation: h.elevation,
+                      link: h.link,
+                      gebirgsgruppe: h.gebirgsgruppe,
+                      bundesland: h.bundesland,
+                      hutReservationId: h.hutReservationId ?? null,
+                      lon: h.lon,
+                      lat: h.lat,
+                      availability:
+                        showAvailability && h.hutReservationId
+                          ? { loading: true }
+                          : null,
+                    };
+                    setPopup(newPopup);
+                    if (showAvailability && h.hutReservationId) {
+                      fetch(`/api/availability?hutId=${h.hutReservationId}`)
+                        .then((res) => res.json())
+                        .then((data) =>
+                          setPopup((prev) =>
+                            prev?.hutReservationId === h.hutReservationId
+                              ? {
+                                  ...prev,
+                                  availability: { loading: false, data },
+                                }
+                              : prev,
+                          ),
+                        )
+                        .catch(() =>
+                          setPopup((prev) =>
+                            prev?.hutReservationId === h.hutReservationId
+                              ? {
+                                  ...prev,
+                                  availability: { loading: false, error: true },
+                                }
+                              : prev,
+                          ),
+                        );
+                    }
+                  }}
+                  style={{
+                    position: "absolute",
+                    left: x - 8,
+                    top: y - 8,
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    background:
+                      groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
+                    border: "2px solid #fff",
+                    cursor: "pointer",
+                    pointerEvents: "auto",
+                  }}
+                />
+              );
+            })}
         </div>
-      )}
-    </div>
+
+        <HutPopup popup={effectivePopup} dateFrom={dateFrom} dateTo={dateTo} />
+      </div>
     </div>
   );
 }
