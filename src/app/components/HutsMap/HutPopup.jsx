@@ -86,8 +86,7 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                         key={e.date}
                         style={{
                           display: "flex",
-                          justifyContent: "space-between",
-                          gap: 12,
+                          gap: 8,
                           fontSize: "0.85em",
                           padding: "2px 0",
                           color:
@@ -98,21 +97,18 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                                 : "#2a7a2a",
                         }}
                       >
-                        <span>{e.date.slice(0, 10)}</span>
-                        <span>
-                          {e.freeBeds != null ? `${e.freeBeds} beds` : ""}
+                        <span
+                          className={e.hutStatus && e.hutStatus.toLowerCase() !== "serviced" ? "instant-tooltip" : undefined}
+                          data-tooltip={e.hutStatus}
+                          style={{ width: 14, flexShrink: 0 }}
+                        >
+                          {e.hutStatus && e.hutStatus.toLowerCase() !== "serviced" ? "ℹ" : ""}
+                        </span>
+                        <span style={{ width: 100, flexShrink: 0 }}>
+                          {e.date.slice(0, 10)}
                         </span>
                         <span>
-                          {e.hutStatus &&
-                          e.hutStatus.toLowerCase() !== "serviced" ? (
-                            <span
-                              className="instant-tooltip"
-                              data-tooltip={e.hutStatus}
-                              style={{ marginLeft: 4 }}
-                            >
-                              ℹ
-                            </span>
-                          ) : null}
+                          {e.freeBeds != null ? `${e.freeBeds} beds` : ""}
                         </span>
                       </div>
                     ))}
