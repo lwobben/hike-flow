@@ -16,7 +16,7 @@ export default function Home() {
           priority
         />
 
-        <h2>Welcome to HikeFlow!</h2>
+        <h2>Welcome to the Hut2Hut app!</h2>
 
         <p>Discover stunning mountain routes and plan your next adventure.</p>
 
