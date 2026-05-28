@@ -67,7 +67,6 @@ function curvedCoords(from, to) {
   return points;
 }
 
-
 export default function HutsMap() {
   const containerRef = useRef(null);
   const mapContainer = useRef(null);
@@ -83,7 +82,7 @@ export default function HutsMap() {
   const [, forceUpdate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null);
-  const [showAvailability, setShowAvailability] = useState(false);
+  const [showAvailability, setShowAvailability] = useState(true);
 
   const defaultFrom = new Date(
     new Date().getFullYear(),
@@ -103,10 +102,12 @@ export default function HutsMap() {
   useEffect(() => {
     if (!popup || popup.type !== "hut" || !popup.hutReservationId) return;
     if (!showAvailability) {
-      setPopup((prev) => prev ? { ...prev, availability: null } : prev);
+      setPopup((prev) => (prev ? { ...prev, availability: null } : prev));
       return;
     }
-    setPopup((prev) => prev ? { ...prev, availability: { loading: true } } : prev);
+    setPopup((prev) =>
+      prev ? { ...prev, availability: { loading: true } } : prev,
+    );
     const id = popup.hutReservationId;
     fetch(`/api/availability?hutId=${id}`)
       .then((res) => res.json())
@@ -303,7 +304,8 @@ export default function HutsMap() {
     if (popup.type !== "hut" || !mapRef.current) return popup;
     const { x, y } = mapRef.current.project([popup.lon, popup.lat]);
     const el = containerRef.current;
-    if (el && (x < 0 || x > el.offsetWidth || y < 0 || y > el.offsetHeight)) return null;
+    if (el && (x < 0 || x > el.offsetWidth || y < 0 || y > el.offsetHeight))
+      return null;
     return { ...popup, x, y };
   })();
 
