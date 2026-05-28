@@ -55,9 +55,24 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                 marginBottom: 4,
               }}
             >
-              View hut page →
+              • View Alpenverein.at page
             </a>
           )}
+          {popup.websites?.map((url) => (
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "#0070f3",
+                display: "block",
+                marginBottom: 4,
+              }}
+            >
+              {url.replace(/^https?:\/\//, "")} →
+            </a>
+          ))}
           {popup.hutReservationId && !popup.availability ? (
             <a
               href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
@@ -79,6 +94,19 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                 </div>
               ) : (
                 <>
+                  <a
+                    href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "#0070f3",
+                      display: "block",
+                      fontSize: "0.85em",
+                      marginTop: 4,
+                    }}
+                  >
+                    Book →
+                  </a>
                   {popup.availability.data
                     .filter((e) => e.date >= dateFrom && e.date <= dateTo)
                     .map((e) => (
@@ -98,11 +126,19 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                         }}
                       >
                         <span
-                          className={e.hutStatus && e.hutStatus.toLowerCase() !== "serviced" ? "instant-tooltip" : undefined}
+                          className={
+                            e.hutStatus &&
+                            e.hutStatus.toLowerCase() !== "serviced"
+                              ? "instant-tooltip"
+                              : undefined
+                          }
                           data-tooltip={e.hutStatus}
                           style={{ width: 14, flexShrink: 0 }}
                         >
-                          {e.hutStatus && e.hutStatus.toLowerCase() !== "serviced" ? "ℹ" : ""}
+                          {e.hutStatus &&
+                          e.hutStatus.toLowerCase() !== "serviced"
+                            ? "ℹ"
+                            : ""}
                         </span>
                         <span style={{ width: 100, flexShrink: 0 }}>
                           {e.date.slice(0, 10)}
@@ -112,19 +148,6 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                         </span>
                       </div>
                     ))}
-                  <a
-                    href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "#0070f3",
-                      display: "block",
-                      fontSize: "0.85em",
-                      marginTop: 4,
-                    }}
-                  >
-                    Book →
-                  </a>
                 </>
               )}
             </div>
@@ -141,9 +164,8 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
           </div>
           <div style={{ fontSize: "0.9em", marginBottom: 2 }}>
             {popup.fromName}
-            {popup.fromElevation
-              ? ` (${popup.fromElevation})`
-              : ""} → {popup.toName}
+            {popup.fromElevation ? ` (${popup.fromElevation})` : ""} →{" "}
+            {popup.toName}
             {popup.toElevation ? ` (${popup.toElevation})` : ""}:{" "}
             <strong>{formatMinutes(popup.fwdMinutes)}</strong>
           </div>

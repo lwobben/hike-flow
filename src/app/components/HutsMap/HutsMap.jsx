@@ -403,6 +403,7 @@ export default function HutsMap() {
                       name: h.name,
                       elevation: h.elevation,
                       link: h.link,
+                      websites: h.websites ?? [],
                       gebirgsgruppe: h.gebirgsgruppe,
                       bundesland: h.bundesland,
                       hutReservationId: h.hutReservationId ?? null,

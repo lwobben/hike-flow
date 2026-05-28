@@ -31,13 +31,11 @@ function scrapeHutPage(hutId, $) {
     edges.push({ from: hutId, to: toId, minutes });
   });
 
-  const rawHref = $("#huette_homepage a").first().attr("href") ?? "";
-  const website =
-    rawHref && rawHref !== "http://" && rawHref !== "https://"
-      ? rawHref
-      : null;
+  const websites = ["#huette_homepage a", "#huette_homepage2 a"]
+    .map((sel) => $(sel).first().attr("href") ?? "")
+    .filter((h) => h && h !== "http://" && h !== "https://");
 
-  return { edges, website };
+  return { edges, websites };
 }
 
 export async function scrapeHuts({ neighbors = true, data = true } = {}) {
@@ -57,12 +55,12 @@ export async function scrapeHuts({ neighbors = true, data = true } = {}) {
       const res = await undiciFetch(url, { dispatcher: agent });
       const html = await res.text();
       const $ = load(html);
-      const { edges: hutEdges, website } = scrapeHutPage(hutId, $);
+      const { edges: hutEdges, websites } = scrapeHutPage(hutId, $);
       if (neighbors) edges.push(...hutEdges);
-      if (data) hutData.push({ id: hutId, website });
+      if (data) hutData.push({ id: hutId, websites });
     } catch (err) {
       console.error(`Skipping hut ${hutId}: ${err.message}`);
-      if (data) hutData.push({ id: hutId, website: null });
+      if (data) hutData.push({ id: hutId, websites: [] });
     }
 
     if (i % 50 === 0) console.log(`Scraping: ${i}/${hutIds.length}`);
