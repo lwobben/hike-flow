@@ -1,3 +1,5 @@
+import { Globe } from "lucide-react";
+
 function formatMinutes(minutes) {
   if (minutes == null) return "unknown";
   const h = Math.floor(minutes / 60);
@@ -58,21 +60,30 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               • View Alpenverein.at page
             </a>
           )}
-          {popup.websites?.map((url) => (
-            <a
-              key={url}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
+          {popup.websites?.length > 0 && (
+            <div
               style={{
-                color: "#0070f3",
-                display: "block",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
                 marginBottom: 4,
               }}
             >
-              {url.replace(/^https?:\/\//, "")} →
-            </a>
-          ))}
+              <span style={{ color: "#444" }}>• Other hut website(s):</span>
+              {popup.websites.map((url) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={url.replace(/^https?:\/\//, "")}
+                  style={{ color: "#0070f3", display: "flex" }}
+                >
+                  <Globe size={16} />
+                </a>
+              ))}
+            </div>
+          )}
           {popup.hutReservationId && !popup.availability ? (
             <a
               href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
