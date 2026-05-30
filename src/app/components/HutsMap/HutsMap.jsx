@@ -317,7 +317,7 @@ export default function HutsMap() {
   })();
 
   return (
-    <div style={{ width: 800 }}>
+    <div style={{ width: 1100 }}>
       <div
         style={{
           display: "flex",
@@ -362,8 +362,8 @@ export default function HutsMap() {
         ref={containerRef}
         style={{
           position: "relative",
-          width: 800,
-          height: 600,
+          width: 1100,
+          height: 700,
           border: "1px solid #ddd",
         }}
       >
