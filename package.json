@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "scrape": "node scripts/scrape.mjs"
+    "scrape": "node scripts/scrape-all.mjs"
   },
   "dependencies": {
     "@radix-ui/react-switch": "^1.2.6",

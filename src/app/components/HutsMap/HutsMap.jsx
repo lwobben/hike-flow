@@ -411,6 +411,12 @@ export default function HutsMap() {
                       elevation: h.elevation,
                       link: h.link,
                       websites: h.websites ?? [],
+                      bahnhof: h.bahnhof ?? null,
+                      bushaltestelle: h.bushaltestelle ?? null,
+                      pkw: h.pkw ?? null,
+                      parkmoeglichkeiten: h.parkmoeglichkeiten ?? null,
+                      approaches: h.approaches ?? h.zustiege ?? [],
+                      tours: h.tours ?? h.touren ?? [],
                       gebirgsgruppe: h.gebirgsgruppe,
                       bundesland: h.bundesland,
                       hutReservationId: h.hutReservationId ?? null,
@@ -470,7 +476,7 @@ export default function HutsMap() {
             })}
         </div>
 
-        <HutPopup popup={effectivePopup} dateFrom={dateFrom} dateTo={dateTo} />
+        <HutPopup popup={effectivePopup} dateFrom={dateFrom} dateTo={dateTo} showAvailability={showAvailability} />
       </div>
 
       <div

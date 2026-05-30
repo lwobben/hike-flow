@@ -9,7 +9,7 @@ Data-fetching scripts that populate the static files the app reads at runtime.
 | `fetch-huts.mjs`   | `data/huettendata.js`, `data/huts.json`             | Fetches the raw hut list from the Alpenverein website and parses it into our format            |
 | `scrape-huts.mjs`  | `data/graph.json`, `data/huts-scraped.json`         | Scrapes each hut's Alpenverein page for neighbor links/walking times and website URL           |
 | `merge-huts.mjs`   | `data/huts-combined.json`                           | Merges `huts.json` and `huts-scraped.json` into a single file keyed by hut id                 |
-| `scrape.mjs`       | all of the above                                    | Runs all three scripts in sequence (recommended)                                               |
+| `scrape-all.mjs`   | all of the above                                    | Runs all three scripts in sequence (recommended)                                               |
 
 All output files are written to `data/`.
 

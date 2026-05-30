@@ -15,6 +15,29 @@ function parseMinutes(str) {
   return parseInt(match[1]) * 60 + parseInt(match[2]);
 }
 
+function rowText($, id) {
+  const td = $(`#${id} td`).eq(1).clone();
+  td.find("a").remove();
+  const text = td.text().replace(/\s+/g, " ").trim();
+  return text || null;
+}
+
+function parseTourEntries($, id) {
+  const td = $(`#${id} td`).eq(1);
+  if (!td.length) return [];
+  const entries = [];
+  const chunks = td.html().split(/<br\s*\/?>\s*<br\s*\/?>/i);
+  for (const chunk of chunks) {
+    const nameMatch = chunk.match(/<strong>([^<]+)<\/strong>/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1].trim();
+    if (!name) continue;
+    const g = chunk.match(/Gehzeit[:\s]+(\d+:\d+)/i);
+    entries.push({ name, minutes: g ? parseMinutes(g[1]) : null });
+  }
+  return entries;
+}
+
 function scrapeHutPage(hutId, $) {
   const edges = [];
 
@@ -35,7 +58,14 @@ function scrapeHutPage(hutId, $) {
     .map((sel) => $(sel).first().attr("href") ?? "")
     .filter((h) => h && h !== "http://" && h !== "https://");
 
-  return { edges, websites };
+  const bahnhof = rowText($, "huette_anreise_zug");
+  const bushaltestelle = rowText($, "huette_anreise_bus");
+  const pkw = rowText($, "huette_anreise_pkw");
+  const parkmoeglichkeiten = rowText($, "huette_parkmoeglichkeiten");
+  const approaches = parseTourEntries($, "huette_zustiege");
+  const tours = parseTourEntries($, "huette_touren");
+
+  return { edges, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours };
 }
 
 export async function scrapeHuts({ neighbors = true, data = true } = {}) {
@@ -55,12 +85,12 @@ export async function scrapeHuts({ neighbors = true, data = true } = {}) {
       const res = await undiciFetch(url, { dispatcher: agent });
       const html = await res.text();
       const $ = load(html);
-      const { edges: hutEdges, websites } = scrapeHutPage(hutId, $);
+      const { edges: hutEdges, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours } = scrapeHutPage(hutId, $);
       if (neighbors) edges.push(...hutEdges);
-      if (data) hutData.push({ id: hutId, websites });
+      if (data) hutData.push({ id: hutId, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours });
     } catch (err) {
       console.error(`Skipping hut ${hutId}: ${err.message}`);
-      if (data) hutData.push({ id: hutId, websites: [] });
+      if (data) hutData.push({ id: hutId, websites: [], bahnhof: null, bushaltestelle: null, pkw: null, parkmoeglichkeiten: null, approaches: [], tours: [] });
     }
 
     if (i % 50 === 0) console.log(`Scraping: ${i}/${hutIds.length}`);

@@ -1,13 +1,32 @@
+import { useState } from "react";
 import { Globe } from "lucide-react";
 
 function formatMinutes(minutes) {
-  if (minutes == null) return "unknown";
+  if (minutes == null) return "?";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ""}`.trim() : `${m}m`;
 }
 
-export default function HutPopup({ popup, dateFrom, dateTo }) {
+const tooltipStyle = {
+  position: "absolute",
+  left: "calc(100% + 8px)",
+  top: 0,
+  background: "#fff",
+  border: "1px solid #ccc",
+  borderRadius: 6,
+  padding: "8px 12px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  zIndex: 1001,
+  minWidth: 220,
+  maxWidth: 320,
+  fontSize: "0.85em",
+  whiteSpace: "normal",
+  pointerEvents: "none",
+};
+
+export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) {
+  const [hovered, setHovered] = useState(null);
   if (!popup) return null;
 
   return (
@@ -46,6 +65,21 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               {popup.bundesland ? ` (${popup.bundesland})` : ""}
             </div>
           )}
+          {(popup.link || popup.websites?.length > 0) && (
+            <div
+              style={{
+                fontSize: "0.7em",
+                fontWeight: "bold",
+                color: "#999",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginTop: 14,
+                marginBottom: 4,
+              }}
+            >
+              Websites
+            </div>
+          )}
           {popup.link && (
             <a
               href={popup.link}
@@ -53,12 +87,19 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               rel="noopener noreferrer"
               style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
             >
-              • View Alpenverein.at page
+              • Alpenverein.at
             </a>
           )}
           {popup.websites?.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <span style={{ color: "#444" }}>• Other hut website(s):</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
+              <span style={{ color: "#444" }}>• Other hut page(s):</span>
               {popup.websites.map((url) => (
                 <a
                   key={url}
@@ -83,7 +124,200 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               • Book →
             </a>
           )}
-          {!popup.hutReservationId && (
+          {(popup.bahnhof ||
+            popup.bushaltestelle ||
+            popup.pkw ||
+            popup.parkmoeglichkeiten ||
+            popup.approaches?.length > 0 ||
+            popup.tours?.length > 0) && (
+            <div
+              style={{
+                fontSize: "0.7em",
+                fontWeight: "bold",
+                color: "#999",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginTop: 14,
+                marginBottom: 4,
+              }}
+            >
+              Hiking info
+            </div>
+          )}
+          {(popup.bahnhof ||
+            popup.bushaltestelle ||
+            popup.pkw ||
+            popup.parkmoeglichkeiten ||
+            popup.approaches?.length > 0) && (
+            <div
+              style={{ position: "relative", marginBottom: 4 }}
+              onMouseEnter={() => setHovered("getting-there")}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <span style={{ color: "#0070f3", cursor: "default" }}>
+                • Getting there
+              </span>
+              {hovered === "getting-there" && (
+                <div style={tooltipStyle}>
+                  {[
+                    popup.bahnhof && ["• Nearest train station", popup.bahnhof],
+                    popup.bushaltestelle && [
+                      "• Nearest bus stop",
+                      popup.bushaltestelle,
+                    ],
+                    popup.pkw && ["• Closest point by car", popup.pkw],
+                    popup.parkmoeglichkeiten && [
+                      "• Parking",
+                      popup.parkmoeglichkeiten,
+                    ],
+                    popup.approaches && ["• Approach routes", ""],
+                  ]
+                    .filter(Boolean)
+                    .map(([label, value]) => (
+                      <div key={label} style={{ marginBottom: 4 }}>
+                        <span style={{ color: "#666" }}>{label}:</span> {value}
+                      </div>
+                    ))}
+                  {popup.approaches?.length > 0 && (
+                    <div
+                      style={{
+                        marginTop:
+                          popup.bahnhof ||
+                          popup.bushaltestelle ||
+                          popup.pkw ||
+                          popup.parkmoeglichkeiten
+                            ? 6
+                            : 0,
+                        paddingLeft: 8,
+                      }}
+                    >
+                      <table
+                        style={{ width: "100%", borderCollapse: "collapse" }}
+                      >
+                        <thead>
+                          <tr>
+                            <th
+                              style={{
+                                textAlign: "left",
+                                color: "#666",
+                                fontWeight: "normal",
+                                paddingBottom: 2,
+                                borderBottom: "1px solid #eee",
+                              }}
+                            >
+                              From
+                            </th>
+                            <th
+                              style={{
+                                textAlign: "right",
+                                color: "#666",
+                                fontWeight: "normal",
+                                paddingBottom: 2,
+                                borderBottom: "1px solid #eee",
+                              }}
+                            >
+                              Time to hut
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {popup.approaches.map((a) => (
+                            <tr key={a.name}>
+                              <td style={{ padding: "2px 0" }}>{a.name}</td>
+                              <td
+                                style={{
+                                  textAlign: "right",
+                                  color: "#888",
+                                  padding: "2px 0",
+                                }}
+                              >
+                                {formatMinutes(a.minutes)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {popup.tours?.length > 0 && (
+            <div
+              style={{ position: "relative", marginBottom: 4 }}
+              onMouseEnter={() => setHovered("routes")}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <span style={{ color: "#0070f3", cursor: "default" }}>
+                • Routes (day tours)
+              </span>
+              {hovered === "routes" && (
+                <div style={{ ...tooltipStyle, minWidth: 300 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th
+                          style={{
+                            textAlign: "left",
+                            color: "#666",
+                            fontWeight: "normal",
+                            paddingBottom: 4,
+                            borderBottom: "1px solid #eee",
+                          }}
+                        >
+                          Destination
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "right",
+                            color: "#666",
+                            fontWeight: "normal",
+                            paddingBottom: 4,
+                            borderBottom: "1px solid #eee",
+                          }}
+                        >
+                          Time to get there
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {popup.tours.map((t) => (
+                        <tr key={t.name}>
+                          <td style={{ padding: "2px 0" }}>{t.name}</td>
+                          <td
+                            style={{
+                              textAlign: "right",
+                              color: "#888",
+                              padding: "2px 0",
+                            }}
+                          >
+                            {formatMinutes(t.minutes)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+          {showAvailability && (
+            <div
+              style={{
+                fontSize: "0.7em",
+                fontWeight: "bold",
+                color: "#999",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginTop: 14,
+                marginBottom: 4,
+              }}
+            >
+              Availability
+            </div>
+          )}
+          {showAvailability && !popup.hutReservationId && (
             <div style={{ color: "#999", fontSize: "0.85em" }}>
               Availability not listed online
             </div>
