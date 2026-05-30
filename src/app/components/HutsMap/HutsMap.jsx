@@ -446,7 +446,8 @@ export default function HutsMap() {
                     top: y - 8,
                     width: 16,
                     height: 16,
-                    borderRadius: "50%",
+                    borderRadius: h.hutReservationId ? "0" : "50%",
+                    transform: h.hutReservationId ? "rotate(45deg)" : undefined,
                     background:
                       groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
                     border: "2px solid #fff",
@@ -459,6 +460,53 @@ export default function HutsMap() {
         </div>
 
         <HutPopup popup={effectivePopup} dateFrom={dateFrom} dateTo={dateTo} />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          marginTop: 8,
+          fontSize: "0.85em",
+          color: "#444",
+        }}
+      >
+        <div
+          className="legend-tooltip"
+          data-tooltip="Up-to-date availabilities are shown for these huts, with the date range based on the date picker above. They are easily bookable via the hut-reservation.org link in the popup."
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              background: "#888",
+              border: "2px solid #fff",
+              outline: "1px solid #888",
+              transform: "rotate(45deg)",
+              flexShrink: 0,
+            }}
+          />
+          Availabilities shown, bookable via hut-reservation.org
+        </div>
+        <div
+          className="legend-tooltip"
+          data-tooltip="Availabilities cannot be checked here automatically. To reserve, visit the hut's own website or contact them directly."
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: "#888",
+              border: "2px solid #fff",
+              outline: "1px solid #888",
+              flexShrink: 0,
+            }}
+          />
+          Book directly with the hut
+        </div>
       </div>
     </div>
   );

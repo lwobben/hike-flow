@@ -88,6 +88,37 @@
   }
 }
 
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+.legend-tooltip {
+  position: relative;
+  cursor: help;
+}
+.legend-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  line-height: 1.4;
+  white-space: normal;
+  width: 280px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+.legend-tooltip:hover::after {
+  opacity: 1;
+}
+
 .instant-tooltip {
   position: relative;
   cursor: help;
