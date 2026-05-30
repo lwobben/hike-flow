@@ -111,10 +111,17 @@ export default function HutsMap() {
     const id = popup.hutReservationId;
     fetch(`/api/availability?hutId=${id}`)
       .then((res) => res.json())
-      .then((data) =>
+      .then((res) =>
         setPopup((prev) =>
           prev?.hutReservationId === id
-            ? { ...prev, availability: { loading: false, data } }
+            ? {
+                ...prev,
+                availability: {
+                  loading: false,
+                  hutUnlocked: res.hutUnlocked ?? true,
+                  data: Array.isArray(res.availability) ? res.availability : [],
+                },
+              }
             : prev,
         ),
       )
@@ -418,12 +425,16 @@ export default function HutsMap() {
                     if (showAvailability && h.hutReservationId) {
                       fetch(`/api/availability?hutId=${h.hutReservationId}`)
                         .then((res) => res.json())
-                        .then((data) =>
+                        .then((res) =>
                           setPopup((prev) =>
                             prev?.hutReservationId === h.hutReservationId
                               ? {
                                   ...prev,
-                                  availability: { loading: false, data },
+                                  availability: {
+                                    loading: false,
+                                    hutUnlocked: res.hutUnlocked ?? true,
+                                    data: Array.isArray(res.availability) ? res.availability : [],
+                                  },
                                 }
                               : prev,
                           ),

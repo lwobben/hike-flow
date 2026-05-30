@@ -9,18 +9,21 @@ export async function GET(request) {
     });
   }
 
-  const res = await fetch(
-    `https://www.hut-reservation.org/api/v1/reservation/getHutAvailability?hutId=${hutId}&step=WIZARD`
-  );
+  const [availRes, infoRes] = await Promise.all([
+    fetch(`https://www.hut-reservation.org/api/v1/reservation/getHutAvailability?hutId=${hutId}&step=WIZARD`),
+    fetch(`https://www.hut-reservation.org/api/v1/reservation/hutInfo/${hutId}`),
+  ]);
 
-  if (!res.ok) {
+  if (!availRes.ok) {
     return new Response(JSON.stringify({ error: "Failed to fetch availability" }), {
-      status: res.status,
+      status: availRes.status,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  const raw = await res.json();
+  const [raw, info] = await Promise.all([availRes.json(), infoRes.ok ? infoRes.json() : {}]);
+
+  const hutUnlocked = info.hutUnlocked ?? true;
   const availability = raw.map((entry) => ({
     date: entry.date,
     freeBeds: entry.freeBeds,
@@ -28,7 +31,7 @@ export async function GET(request) {
     percentage: entry.percentage,
   }));
 
-  return new Response(JSON.stringify(availability), {
+  return new Response(JSON.stringify({ hutUnlocked, availability }), {
     headers: { "Content-Type": "application/json" },
   });
 }

@@ -51,24 +51,13 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               href={popup.link}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                color: "#0070f3",
-                display: "block",
-                marginBottom: 4,
-              }}
+              style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
             >
               • View Alpenverein.at page
             </a>
           )}
           {popup.websites?.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 4,
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <span style={{ color: "#444" }}>• Other hut website(s):</span>
               {popup.websites.map((url) => (
                 <a
@@ -84,16 +73,17 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               ))}
             </div>
           )}
-          {popup.hutReservationId && !popup.availability ? (
+          {popup.hutReservationId && (
             <a
               href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "#0070f3", display: "block" }}
+              style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
             >
-              View availability →
+              • Book →
             </a>
-          ) : popup.availability ? (
+          )}
+          {popup.availability && (
             <div style={{ marginTop: 8 }}>
               {popup.availability.loading ? (
                 <div style={{ color: "#999", fontSize: "0.85em" }}>
@@ -103,21 +93,12 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                 <div style={{ color: "#999", fontSize: "0.85em" }}>
                   Could not load availability
                 </div>
+              ) : popup.availability.hutUnlocked === false ? (
+                <div style={{ color: "#999", fontSize: "0.85em" }}>
+                  Profile not activated — book directly with the hut
+                </div>
               ) : (
                 <>
-                  <a
-                    href={`https://www.hut-reservation.org/reservation/book-hut/${popup.hutReservationId}/wizard`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "#0070f3",
-                      display: "block",
-                      fontSize: "0.85em",
-                      marginTop: 4,
-                    }}
-                  >
-                    Book →
-                  </a>
                   {popup.availability.data
                     .filter((e) => e.date >= dateFrom && e.date <= dateTo)
                     .map((e) => (
@@ -161,10 +142,6 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
                     ))}
                 </>
               )}
-            </div>
-          ) : (
-            <div style={{ color: "#999", fontSize: "0.85em" }}>
-              Availability not listed online
             </div>
           )}
         </>
