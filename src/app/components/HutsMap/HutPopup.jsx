@@ -83,6 +83,11 @@ export default function HutPopup({ popup, dateFrom, dateTo }) {
               • Book →
             </a>
           )}
+          {!popup.hutReservationId && (
+            <div style={{ color: "#999", fontSize: "0.85em" }}>
+              Availability not listed online
+            </div>
+          )}
           {popup.availability && (
             <div style={{ marginTop: 8 }}>
               {popup.availability.loading ? (
