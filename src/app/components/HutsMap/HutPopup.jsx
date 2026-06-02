@@ -155,7 +155,7 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
               onMouseLeave={() => setHovered(null)}
             >
               <span style={{ color: "#0070f3", cursor: "default" }}>
-                • Getting there
+                • Getting there from the valley
               </span>
               {hovered === "getting-there" && (
                 <div style={tooltipStyle}>
@@ -371,8 +371,18 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
                             ? "ℹ"
                             : ""}
                         </span>
-                        <span style={{ width: 100, flexShrink: 0 }}>
-                          {e.date.slice(0, 10)}
+                        <span style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                          {(() => {
+                            const [y, m, d] = e.date.slice(0, 10).split("-").map(Number);
+                            const day = ["Su.", "Mo.", "Tu.", "We.", "Th.", "Fr.", "Sa."][new Date(y, m - 1, d).getDay()];
+                            const formatted = `${String(d).padStart(2, "0")}-${String(m).padStart(2, "0")}-${y}`;
+                            return (
+                              <>
+                                <span style={{ width: 28, flexShrink: 0 }}>{day}</span>
+                                <span style={{ width: 95, flexShrink: 0 }}>{formatted}</span>
+                              </>
+                            );
+                          })()}
                         </span>
                         <span>
                           {e.freeBeds != null ? `${e.freeBeds} beds` : ""}
