@@ -28,6 +28,25 @@ const PALETTE = [
   "#e6beff",
 ];
 
+const MAP_STYLES = {
+  minimal: "https://tiles.openfreemap.org/styles/positron",
+  detailed: "https://tiles.openfreemap.org/styles/bright",
+  terrain: {
+    version: 8,
+    sources: {
+      opentopomap: {
+        type: "raster",
+        tiles: ["https://a.tile.opentopomap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "© OpenTopoMap contributors, © OpenStreetMap contributors",
+      },
+    },
+    layers: [{ id: "raster-layer", type: "raster", source: "opentopomap" }],
+  },
+};
+
+const STYLE_LABELS = { minimal: "Minimal", detailed: "Detailed", terrain: "Terrain" };
+
 function buildGroupColorMap(huts) {
   const colorMap = {};
   let i = 0;
@@ -83,6 +102,7 @@ export default function HutsMap() {
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null);
   const [showAvailability, setShowAvailability] = useState(true);
+  const [mapStyle, setMapStyle] = useState("minimal");
 
   const defaultFrom = new Date(
     new Date().getFullYear(),
@@ -277,13 +297,21 @@ export default function HutsMap() {
       });
   }, [addEdgeLayer]);
 
+  // Style switching
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.once("style.load", () => addEdgeLayer());
+    map.setStyle(MAP_STYLES[mapStyle]);
+  }, [mapStyle]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Init map
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: "https://tiles.openfreemap.org/styles/positron",
+      style: MAP_STYLES.minimal,
       center: [13.4, 47.2],
       zoom: 6,
     });
@@ -368,6 +396,36 @@ export default function HutsMap() {
         }}
       >
         <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+
+        <div
+          style={{
+            position: "absolute",
+            bottom: 8,
+            left: 8,
+            display: "flex",
+            gap: 4,
+            zIndex: 10,
+          }}
+        >
+          {Object.keys(MAP_STYLES).map((key) => (
+            <button
+              key={key}
+              onClick={() => setMapStyle(key)}
+              style={{
+                padding: "4px 10px",
+                fontSize: "0.78em",
+                borderRadius: 4,
+                border: "1px solid #aaa",
+                background: mapStyle === key ? "#0070f3" : "rgba(255,255,255,0.9)",
+                color: mapStyle === key ? "#fff" : "#333",
+                cursor: "pointer",
+                fontWeight: mapStyle === key ? 600 : 400,
+              }}
+            >
+              {STYLE_LABELS[key]}
+            </button>
+          ))}
+        </div>
 
         {loading && (
           <div
