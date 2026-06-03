@@ -158,7 +158,7 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
                 • Getting there from the valley
               </span>
               {hovered === "getting-there" && (
-                <div style={tooltipStyle}>
+                <div style={{ ...tooltipStyle, minWidth: 320 }}>
                   {[
                     popup.bahnhof && ["• Nearest train station", popup.bahnhof],
                     popup.bushaltestelle && [
@@ -175,7 +175,7 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
                     .filter(Boolean)
                     .map(([label, value]) => (
                       <div key={label} style={{ marginBottom: 4 }}>
-                        <span style={{ color: "#666" }}>{label}:</span> {value}
+                        <strong style={{ color: "#666" }}>{label}:</strong> {value}
                       </div>
                     ))}
                   {popup.approaches?.length > 0 && (
@@ -282,8 +282,8 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
                       </tr>
                     </thead>
                     <tbody>
-                      {popup.tours.map((t) => (
-                        <tr key={t.name}>
+                      {popup.tours.map((t, i) => (
+                        <tr key={i}>
                           <td style={{ padding: "2px 0" }}>{t.name}</td>
                           <td
                             style={{
@@ -293,6 +293,67 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
                             }}
                           >
                             {formatMinutes(t.minutes)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+          {popup.neighbors?.length > 0 && (
+            <div
+              style={{ position: "relative", marginBottom: 4 }}
+              onMouseEnter={() => setHovered("neighbors")}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <span style={{ color: "#0070f3", cursor: "default" }}>
+                • Neighbouring huts
+              </span>
+              {hovered === "neighbors" && (
+                <div style={{ ...tooltipStyle, minWidth: 380 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th
+                          style={{
+                            textAlign: "left",
+                            color: "#666",
+                            fontWeight: "normal",
+                            paddingBottom: 4,
+                            borderBottom: "1px solid #eee",
+                          }}
+                        >
+                          Hut
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "right",
+                            color: "#666",
+                            fontWeight: "normal",
+                            paddingBottom: 4,
+                            borderBottom: "1px solid #eee",
+                          }}
+                        >
+                          Time to get there
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {popup.neighbors.map((n) => (
+                        <tr key={n.name}>
+                          <td style={{ padding: "2px 0" }}>{n.name}</td>
+                          <td
+                            style={{
+                              textAlign: "right",
+                              color: "#888",
+                              padding: "2px 0",
+                            }}
+                          >
+                            {n.minutes !== null
+                              ? formatMinutes(n.minutes)
+                              : <>? <i>(other direction: {formatMinutes(n.reverseMinutes)})</i></>}
                           </td>
                         </tr>
                       ))}

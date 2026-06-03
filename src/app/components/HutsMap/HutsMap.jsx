@@ -278,23 +278,15 @@ export default function HutsMap() {
         groupColorMap.current = buildGroupColorMap(valid);
         hutsRef.current = valid;
         hutsByIdRef.current = Object.fromEntries(valid.map((h) => [h.id, h]));
-        setHuts(valid);
-        addEdgeLayer();
-      })
-      .finally(() => setLoading(false));
-  }, [addEdgeLayer]);
-
-  // Fetch graph
-  useEffect(() => {
-    fetch("/api/graph")
-      .then((res) => res.json())
-      .then((edges) => {
+        const edges = valid.flatMap((h) => (h.edges ?? []).map((e) => ({ from: h.id, ...e })));
         graphRef.current = edges;
         const lookup = {};
         for (const e of edges) lookup[`${e.from}-${e.to}`] = e.minutes;
         edgesByKeyRef.current = lookup;
+        setHuts(valid);
         addEdgeLayer();
-      });
+      })
+      .finally(() => setLoading(false));
   }, [addEdgeLayer]);
 
   // Style switching
@@ -462,7 +454,6 @@ export default function HutsMap() {
                   key={i}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const rect = containerRef.current.getBoundingClientRect();
                     const newPopup = {
                       type: "hut",
                       name: h.name,
@@ -475,6 +466,33 @@ export default function HutsMap() {
                       parkmoeglichkeiten: h.parkmoeglichkeiten ?? null,
                       approaches: h.approaches ?? h.zustiege ?? [],
                       tours: h.tours ?? h.touren ?? [],
+                      neighbors: (() => {
+                          const hutId = String(h.id);
+                          const outgoing = new Map();
+                          const incoming = new Map();
+                          for (const [key, minutes] of Object.entries(edgesByKeyRef.current)) {
+                            if (key.startsWith(`${hutId}-`)) {
+                              outgoing.set(key.slice(hutId.length + 1), minutes);
+                            } else if (key.endsWith(`-${hutId}`)) {
+                              incoming.set(key.slice(0, key.length - hutId.length - 1), minutes);
+                            }
+                          }
+                          const result = [];
+                          for (const [neighborId, minutes] of outgoing) {
+                            const n = hutsByIdRef.current[neighborId];
+                            if (n) result.push({ name: n.name, minutes });
+                          }
+                          for (const [neighborId, reverseMinutes] of incoming) {
+                            if (!outgoing.has(neighborId)) {
+                              const n = hutsByIdRef.current[neighborId];
+                              if (n) result.push({ name: n.name, minutes: null, reverseMinutes });
+                            }
+                          }
+                          return result.sort((a, b) => {
+                            if (a.minutes !== null && b.minutes !== null) return a.minutes - b.minutes;
+                            return a.minutes !== null ? -1 : 1;
+                          });
+                        })(),
                       gebirgsgruppe: h.gebirgsgruppe,
                       bundesland: h.bundesland,
                       hutReservationId: h.hutReservationId ?? null,

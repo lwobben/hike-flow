@@ -51,7 +51,7 @@ function scrapeHutPage(hutId, $) {
     const g = gehzeitText.match(/Gehzeit[:\s]+(\d+:\d+)/i);
     const minutes = g ? parseMinutes(g[1]) : null;
 
-    edges.push({ from: hutId, to: toId, minutes });
+    edges.push({ to: toId, minutes });
   });
 
   const websites = ["#huette_homepage a", "#huette_homepage2 a"]
@@ -68,14 +68,13 @@ function scrapeHutPage(hutId, $) {
   return { edges, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours };
 }
 
-export async function scrapeHuts({ neighbors = true, data = true } = {}) {
+export async function scrapeHuts({ data = true } = {}) {
   const jsText = await readFile(resolve(DATA, "huettendata.js"), "utf8");
   const sandbox = { hD: {} };
   vm.createContext(sandbox);
   vm.runInContext(jsText, sandbox, { timeout: 5000 });
 
   const hutIds = Object.keys(sandbox.hD);
-  const edges = [];
   const hutData = [];
 
   for (let i = 0; i < hutIds.length; i++) {
@@ -85,25 +84,15 @@ export async function scrapeHuts({ neighbors = true, data = true } = {}) {
       const res = await undiciFetch(url, { dispatcher: agent });
       const html = await res.text();
       const $ = load(html);
-      const { edges: hutEdges, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours } = scrapeHutPage(hutId, $);
-      if (neighbors) edges.push(...hutEdges);
-      if (data) hutData.push({ id: hutId, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours });
+      const { edges, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours } = scrapeHutPage(hutId, $);
+      if (data) hutData.push({ id: hutId, edges, websites, bahnhof, bushaltestelle, pkw, parkmoeglichkeiten, approaches, tours });
     } catch (err) {
       console.error(`Skipping hut ${hutId}: ${err.message}`);
-      if (data) hutData.push({ id: hutId, websites: [], bahnhof: null, bushaltestelle: null, pkw: null, parkmoeglichkeiten: null, approaches: [], tours: [] });
+      if (data) hutData.push({ id: hutId, edges: [], websites: [], bahnhof: null, bushaltestelle: null, pkw: null, parkmoeglichkeiten: null, approaches: [], tours: [] });
     }
 
     if (i % 50 === 0) console.log(`Scraping: ${i}/${hutIds.length}`);
     await new Promise((r) => setTimeout(r, 150));
-  }
-
-  if (neighbors) {
-    await writeFile(
-      resolve(DATA, "graph.json"),
-      JSON.stringify(edges, null, 2),
-      "utf8",
-    );
-    console.log(`graph.json written — ${edges.length} edges`);
   }
 
   if (data) {
@@ -117,11 +106,5 @@ export async function scrapeHuts({ neighbors = true, data = true } = {}) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const args = process.argv.slice(2);
-  const neighborsOnly = args.includes("--neighbors");
-  const dataOnly = args.includes("--data");
-  await scrapeHuts({
-    neighbors: !dataOnly,
-    data: !neighborsOnly,
-  });
+  await scrapeHuts();
 }
