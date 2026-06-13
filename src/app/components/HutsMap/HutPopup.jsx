@@ -25,7 +25,7 @@ const tooltipStyle = {
   pointerEvents: "none",
 };
 
-export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) {
+export default function HutPopup({ popup, dateFrom, dateTo, showAvailability, bedsNeeded = 1 }) {
   const [hovered, setHovered] = useState(null);
   if (!popup) return null;
 
@@ -410,11 +410,9 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability }) 
                           fontSize: "0.85em",
                           padding: "2px 0",
                           color:
-                            e.freeBeds == null || e.freeBeds === 0
+                            e.freeBeds == null || e.freeBeds < bedsNeeded
                               ? "#c00"
-                              : e.freeBeds <= 3
-                                ? "#e07800"
-                                : "#2a7a2a",
+                              : "#2a7a2a",
                         }}
                       >
                         <span

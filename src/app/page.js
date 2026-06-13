@@ -1,6 +1,5 @@
 import Image from "next/image";
 import styles from "./page.module.css";
-import Huts from "./components/Huts";
 import HutsMap from "./components/HutsMap/HutsMapClient";
 
 export default function Home() {
@@ -28,8 +27,6 @@ export default function Home() {
         </ol>
 
         <HutsMap />
-
-        <Huts />
       </main>
     </div>
   );

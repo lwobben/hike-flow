@@ -40,7 +40,7 @@
     "name": "Meraner Hütte",
     "elevation": "1937 m",
     "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=1005",
-    "phone": "+39/0473/279405",
+    "phone": "+39/393/0006447",
     "lat": 46.6832833333333,
     "lon": 11.2819333333333,
     "gebirgsgruppe": "Sarntaler Alpen",
@@ -2484,18 +2484,6 @@
     "hutReservationId": null
   },
   {
-    "id": "1726",
-    "name": "Feistritzer Alm",
-    "elevation": "0 m",
-    "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=1726",
-    "phone": null,
-    "lat": 46.5600833333333,
-    "lon": 13.5073333333333,
-    "gebirgsgruppe": "Karnischer Hauptkamm",
-    "bundesland": "Kärnten",
-    "hutReservationId": null
-  },
-  {
     "id": "1736",
     "name": "Naturfreundehaus &quot;Rote Grube&quot;",
     "elevation": null,
@@ -4051,7 +4039,7 @@
     "phone": null,
     "lat": 46.6588833333333,
     "lon": 12.0487333333333,
-    "gebirgsgruppe": "Sarntaler Alpen",
+    "gebirgsgruppe": "Dolomiten",
     "bundesland": "Italien/Südtirol",
     "hutReservationId": null
   },
@@ -6856,7 +6844,7 @@
     "name": "Hofpürgl-Hütte",
     "elevation": "1705 m",
     "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=0108",
-    "phone": "bei Hüttenbetrieb +43 6453 8304",
+    "phone": "+43 6453 8304 bei Hüttenbetrieb",
     "lat": 47.482302,
     "lon": 13.519134,
     "gebirgsgruppe": "Dachsteingebirge",
@@ -7881,7 +7869,7 @@
     "lon": 11.288375,
     "gebirgsgruppe": "Karwendel",
     "bundesland": "Tirol",
-    "hutReservationId": null
+    "hutReservationId": "714"
   },
   {
     "id": "0212",
@@ -10144,7 +10132,7 @@
     "name": "Wiesbadener Hütte",
     "elevation": "2443 m",
     "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=0653",
-    "phone": "0043/5558/4233",
+    "phone": "0043 5444 5205",
     "lat": 46.868055555556,
     "lon": 10.116111111111,
     "gebirgsgruppe": "Silvretta",

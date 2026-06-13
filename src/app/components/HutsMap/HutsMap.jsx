@@ -5,6 +5,8 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Switch } from "@/components/ui/switch";
 import HutPopup from "./HutPopup";
+import PlanTourModal from "./PlanTourModal";
+import DateRangePicker from "./DateRangePicker";
 const PALETTE = [
   "#e6194b",
   "#3cb44b",
@@ -45,7 +47,11 @@ const MAP_STYLES = {
   },
 };
 
-const STYLE_LABELS = { minimal: "Minimal", detailed: "Detailed", terrain: "Terrain" };
+const STYLE_LABELS = {
+  minimal: "Minimal",
+  detailed: "Detailed",
+  terrain: "Terrain",
+};
 
 function buildGroupColorMap(huts) {
   const colorMap = {};
@@ -103,6 +109,12 @@ export default function HutsMap() {
   const [popup, setPopup] = useState(null);
   const [showAvailability, setShowAvailability] = useState(true);
   const [mapStyle, setMapStyle] = useState("minimal");
+  const [showPlanTour, setShowPlanTour] = useState(false);
+  const [tourSelectedHuts, setTourSelectedHuts] = useState([]);
+  const [bedsNeeded, setBedsNeeded] = useState(2);
+  const [hutSearch, setHutSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
 
   const defaultFrom = new Date(
     new Date().getFullYear(),
@@ -278,7 +290,9 @@ export default function HutsMap() {
         groupColorMap.current = buildGroupColorMap(valid);
         hutsRef.current = valid;
         hutsByIdRef.current = Object.fromEntries(valid.map((h) => [h.id, h]));
-        const edges = valid.flatMap((h) => (h.edges ?? []).map((e) => ({ from: h.id, ...e })));
+        const edges = valid.flatMap((h) =>
+          (h.edges ?? []).map((e) => ({ from: h.id, ...e })),
+        );
         graphRef.current = edges;
         const lookup = {};
         for (const e of edges) lookup[`${e.from}-${e.to}`] = e.minutes;
@@ -326,6 +340,121 @@ export default function HutsMap() {
     };
   }, [addEdgeLayer]);
 
+  // Close search dropdown on outside click
+  useEffect(() => {
+    if (!searchOpen) return;
+    function onDown(e) {
+      if (searchRef.current && !searchRef.current.contains(e.target))
+        setSearchOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [searchOpen]);
+
+  const searchResults = hutSearch.trim()
+    ? huts
+        .filter((h) => h.name.toLowerCase().includes(hutSearch.toLowerCase()))
+        .slice(0, 10)
+    : [];
+
+  function openHutPopup(h) {
+    const hutId = String(h.id);
+    const outgoing = new Map();
+    const incoming = new Map();
+    for (const [key, minutes] of Object.entries(edgesByKeyRef.current)) {
+      if (key.startsWith(`${hutId}-`)) {
+        outgoing.set(key.slice(hutId.length + 1), minutes);
+      } else if (key.endsWith(`-${hutId}`)) {
+        incoming.set(key.slice(0, key.length - hutId.length - 1), minutes);
+      }
+    }
+    const neighbors = [];
+    for (const [neighborId, minutes] of outgoing) {
+      const n = hutsByIdRef.current[neighborId];
+      if (n) neighbors.push({ name: n.name, minutes });
+    }
+    for (const [neighborId, reverseMinutes] of incoming) {
+      if (!outgoing.has(neighborId)) {
+        const n = hutsByIdRef.current[neighborId];
+        if (n) neighbors.push({ name: n.name, minutes: null, reverseMinutes });
+      }
+    }
+    neighbors.sort((a, b) => {
+      if (a.minutes !== null && b.minutes !== null)
+        return a.minutes - b.minutes;
+      return a.minutes !== null ? -1 : 1;
+    });
+    const newPopup = {
+      type: "hut",
+      name: h.name,
+      elevation: h.elevation,
+      link: h.link,
+      websites: h.websites ?? [],
+      bahnhof: h.bahnhof ?? null,
+      bushaltestelle: h.bushaltestelle ?? null,
+      pkw: h.pkw ?? null,
+      parkmoeglichkeiten: h.parkmoeglichkeiten ?? null,
+      approaches: h.approaches ?? h.zustiege ?? [],
+      tours: h.tours ?? h.touren ?? [],
+      neighbors,
+      gebirgsgruppe: h.gebirgsgruppe,
+      bundesland: h.bundesland,
+      hutReservationId: h.hutReservationId ?? null,
+      lon: h.lon,
+      lat: h.lat,
+      availability:
+        showAvailability && h.hutReservationId ? { loading: true } : null,
+    };
+    setPopup(newPopup);
+    if (showAvailability && h.hutReservationId) {
+      fetch(`/api/availability?hutId=${h.hutReservationId}`)
+        .then((res) => res.json())
+        .then((res) =>
+          setPopup((prev) =>
+            prev?.hutReservationId === h.hutReservationId
+              ? {
+                  ...prev,
+                  availability: {
+                    loading: false,
+                    hutUnlocked: res.hutUnlocked ?? true,
+                    data: Array.isArray(res.availability)
+                      ? res.availability
+                      : [],
+                  },
+                }
+              : prev,
+          ),
+        )
+        .catch(() =>
+          setPopup((prev) =>
+            prev?.hutReservationId === h.hutReservationId
+              ? { ...prev, availability: { loading: false, error: true } }
+              : prev,
+          ),
+        );
+    }
+  }
+
+  function selectHutFromSearch(h) {
+    setHutSearch("");
+    setSearchOpen(false);
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [h.lon, h.lat],
+        zoom: Math.max(mapRef.current.getZoom(), 11),
+        duration: 600,
+      });
+    }
+    if (showPlanTour) {
+      setTourSelectedHuts((prev) => [
+        ...prev,
+        { ...h, _uid: crypto.randomUUID() },
+      ]);
+    } else {
+      openHutPopup(h);
+    }
+  }
+
   const effectivePopup = (() => {
     if (!popup) return null;
     if (popup.type !== "hut" || !mapRef.current) return popup;
@@ -342,10 +471,99 @@ export default function HutsMap() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 4,
+          gap: 40,
           marginBottom: 8,
         }}
       >
+        {/* Hut search */}
+        <div ref={searchRef} style={{ position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Search huts…"
+            value={hutSearch}
+            onChange={(e) => {
+              setHutSearch(e.target.value);
+              setSearchOpen(true);
+            }}
+            onFocus={() => hutSearch.trim() && setSearchOpen(true)}
+            style={{
+              padding: "4px 8px",
+              border: "1px solid #ccc",
+              borderRadius: 4,
+              fontSize: "0.85em",
+              width: 180,
+            }}
+          />
+          {searchOpen && searchResults.length > 0 && (
+            <ul
+              style={{
+                position: "absolute",
+                top: "calc(100% + 4px)",
+                left: 0,
+                width: 260,
+                background: "#fff",
+                border: "1px solid #ddd",
+                borderRadius: 4,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                margin: 0,
+                padding: 0,
+                listStyle: "none",
+                zIndex: 3000,
+                maxHeight: 280,
+                overflowY: "auto",
+              }}
+            >
+              {searchResults.map((h) => (
+                <li
+                  key={h.id}
+                  onClick={() => selectHutFromSearch(h)}
+                  style={{
+                    padding: "7px 12px",
+                    cursor: "pointer",
+                    fontSize: "0.85em",
+                    borderBottom: "1px solid #f0f0f0",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f0f7ff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#fff";
+                  }}
+                >
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {h.name}
+                  </span>
+                  <span
+                    style={{
+                      color: "#bbb",
+                      flexShrink: 0,
+                      fontSize: "0.82em",
+                      textAlign: "right",
+                    }}
+                  >
+                    {h.gebirgsgruppe && (
+                      <span style={{ display: "block", color: "#ccc" }}>
+                        {h.gebirgsgruppe}
+                      </span>
+                    )}
+                    <span style={{ display: "block" }}>{h.elevation}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <label
           style={{
             display: "flex",
@@ -361,22 +579,81 @@ export default function HutsMap() {
           Show availabilities
         </label>
         {showAvailability && (
-          <>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              style={{ marginLeft: 50 }}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <DateRangePicker
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              onChange={(from, to) => {
+                setDateFrom(from);
+                setDateTo(to);
+              }}
             />
-            <span>–</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: "0.85em",
+                color: "#555",
+              }}
+            >
+              Beds:
+              <input
+                type="number"
+                min="1"
+                max="99"
+                value={bedsNeeded}
+                onChange={(e) =>
+                  setBedsNeeded(Math.max(1, parseInt(e.target.value) || 1))
+                }
+                style={{
+                  width: 48,
+                  padding: "3px 5px",
+                  border: "1px solid #ccc",
+                  borderRadius: 4,
+                  fontSize: "0.85em",
+                }}
+              />
+            </label>
+          </div>
         )}
+        <button
+          onClick={() => setShowPlanTour(true)}
+          style={{
+            marginLeft: 16,
+            padding: "4px 12px",
+            fontSize: "0.85em",
+            borderRadius: 4,
+            border: "1px solid #0070f3",
+            background: "#0070f3",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+        >
+          Plan tour
+        </button>
       </div>
+
+      {showPlanTour && (
+        <PlanTourModal
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onClose={() => {
+            setShowPlanTour(false);
+            setTourSelectedHuts([]);
+          }}
+          selectedHuts={tourSelectedHuts}
+          onSelectedHutsChange={setTourSelectedHuts}
+          bedsNeeded={bedsNeeded}
+        />
+      )}
 
       <div
         ref={containerRef}
@@ -408,7 +685,8 @@ export default function HutsMap() {
                 fontSize: "0.78em",
                 borderRadius: 4,
                 border: "1px solid #aaa",
-                background: mapStyle === key ? "#0070f3" : "rgba(255,255,255,0.9)",
+                background:
+                  mapStyle === key ? "#0070f3" : "rgba(255,255,255,0.9)",
                 color: mapStyle === key ? "#fff" : "#333",
                 cursor: "pointer",
                 fontWeight: mapStyle === key ? 600 : 400,
@@ -454,84 +732,14 @@ export default function HutsMap() {
                   key={i}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const newPopup = {
-                      type: "hut",
-                      name: h.name,
-                      elevation: h.elevation,
-                      link: h.link,
-                      websites: h.websites ?? [],
-                      bahnhof: h.bahnhof ?? null,
-                      bushaltestelle: h.bushaltestelle ?? null,
-                      pkw: h.pkw ?? null,
-                      parkmoeglichkeiten: h.parkmoeglichkeiten ?? null,
-                      approaches: h.approaches ?? h.zustiege ?? [],
-                      tours: h.tours ?? h.touren ?? [],
-                      neighbors: (() => {
-                          const hutId = String(h.id);
-                          const outgoing = new Map();
-                          const incoming = new Map();
-                          for (const [key, minutes] of Object.entries(edgesByKeyRef.current)) {
-                            if (key.startsWith(`${hutId}-`)) {
-                              outgoing.set(key.slice(hutId.length + 1), minutes);
-                            } else if (key.endsWith(`-${hutId}`)) {
-                              incoming.set(key.slice(0, key.length - hutId.length - 1), minutes);
-                            }
-                          }
-                          const result = [];
-                          for (const [neighborId, minutes] of outgoing) {
-                            const n = hutsByIdRef.current[neighborId];
-                            if (n) result.push({ name: n.name, minutes });
-                          }
-                          for (const [neighborId, reverseMinutes] of incoming) {
-                            if (!outgoing.has(neighborId)) {
-                              const n = hutsByIdRef.current[neighborId];
-                              if (n) result.push({ name: n.name, minutes: null, reverseMinutes });
-                            }
-                          }
-                          return result.sort((a, b) => {
-                            if (a.minutes !== null && b.minutes !== null) return a.minutes - b.minutes;
-                            return a.minutes !== null ? -1 : 1;
-                          });
-                        })(),
-                      gebirgsgruppe: h.gebirgsgruppe,
-                      bundesland: h.bundesland,
-                      hutReservationId: h.hutReservationId ?? null,
-                      lon: h.lon,
-                      lat: h.lat,
-                      availability:
-                        showAvailability && h.hutReservationId
-                          ? { loading: true }
-                          : null,
-                    };
-                    setPopup(newPopup);
-                    if (showAvailability && h.hutReservationId) {
-                      fetch(`/api/availability?hutId=${h.hutReservationId}`)
-                        .then((res) => res.json())
-                        .then((res) =>
-                          setPopup((prev) =>
-                            prev?.hutReservationId === h.hutReservationId
-                              ? {
-                                  ...prev,
-                                  availability: {
-                                    loading: false,
-                                    hutUnlocked: res.hutUnlocked ?? true,
-                                    data: Array.isArray(res.availability) ? res.availability : [],
-                                  },
-                                }
-                              : prev,
-                          ),
-                        )
-                        .catch(() =>
-                          setPopup((prev) =>
-                            prev?.hutReservationId === h.hutReservationId
-                              ? {
-                                  ...prev,
-                                  availability: { loading: false, error: true },
-                                }
-                              : prev,
-                          ),
-                        );
+                    if (showPlanTour) {
+                      setTourSelectedHuts((prev) => [
+                        ...prev,
+                        { ...h, _uid: crypto.randomUUID() },
+                      ]);
+                      return;
                     }
+                    openHutPopup(h);
                   }}
                   style={{
                     position: "absolute",
@@ -544,6 +752,10 @@ export default function HutsMap() {
                     background:
                       groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
                     border: "2px solid #fff",
+                    outline: tourSelectedHuts.find((s) => s.id === h.id)
+                      ? "3px solid #0070f3"
+                      : undefined,
+                    outlineOffset: "2px",
                     cursor: "pointer",
                     pointerEvents: "auto",
                   }}
@@ -552,7 +764,13 @@ export default function HutsMap() {
             })}
         </div>
 
-        <HutPopup popup={effectivePopup} dateFrom={dateFrom} dateTo={dateTo} showAvailability={showAvailability} />
+        <HutPopup
+          popup={effectivePopup}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          showAvailability={showAvailability}
+          bedsNeeded={bedsNeeded}
+        />
       </div>
 
       <div

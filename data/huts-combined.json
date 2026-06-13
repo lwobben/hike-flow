@@ -202,7 +202,7 @@
     "name": "Meraner Hütte",
     "elevation": "1937 m",
     "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=1005",
-    "phone": "+39/0473/279405",
+    "phone": "+39/393/0006447",
     "lat": 46.6832833333333,
     "lon": 11.2819333333333,
     "gebirgsgruppe": "Sarntaler Alpen",
@@ -8360,26 +8360,6 @@
     ]
   },
   {
-    "id": "1726",
-    "name": "Feistritzer Alm",
-    "elevation": "0 m",
-    "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=1726",
-    "phone": null,
-    "lat": 46.5600833333333,
-    "lon": 13.5073333333333,
-    "gebirgsgruppe": "Karnischer Hauptkamm",
-    "bundesland": "Kärnten",
-    "hutReservationId": null,
-    "edges": [],
-    "websites": [],
-    "bahnhof": null,
-    "bushaltestelle": null,
-    "pkw": null,
-    "parkmoeglichkeiten": null,
-    "approaches": [],
-    "tours": []
-  },
-  {
     "id": "1736",
     "name": "Naturfreundehaus &quot;Rote Grube&quot;",
     "elevation": null,
@@ -11557,7 +11537,7 @@
     "phone": null,
     "lat": 46.6588833333333,
     "lon": 12.0487333333333,
-    "gebirgsgruppe": "Sarntaler Alpen",
+    "gebirgsgruppe": "Dolomiten",
     "bundesland": "Italien/Südtirol",
     "hutReservationId": null,
     "edges": [],
@@ -17055,14 +17035,10 @@
       {
         "to": "0049",
         "minutes": 600
-      },
-      {
-        "to": "1480",
-        "minutes": null
       }
     ],
     "websites": [
-      "http://zollnerseehuette.oeav-obergailtal.at/",
+      "http://www.oeav-obergailtal.at/huetten/",
       "http://www.oeav-obergailtal.at"
     ],
     "bahnhof": null,
@@ -17716,10 +17692,6 @@
     ],
     "tours": [
       {
-        "name": "Hochkönig",
-        "minutes": 285
-      },
-      {
         "name": "Taghaube",
         "minutes": 120
       },
@@ -17737,10 +17709,6 @@
       },
       {
         "name": "Lausköpfe (Pichlalm)",
-        "minutes": null
-      },
-      {
-        "name": "Hochkönigsteig",
         "minutes": null
       },
       {
@@ -18564,11 +18532,7 @@
     "parkmoeglichkeiten": "Gosausee",
     "approaches": [
       {
-        "name": "Annaberg",
-        "minutes": 150
-      },
-      {
-        "name": "Gosaukammbahn-Bergstation zur Hütte",
+        "name": "Gosaukammbahn-Bergstation",
         "minutes": 15
       },
       {
@@ -18577,6 +18541,14 @@
       },
       {
         "name": "Gosausee",
+        "minutes": 90
+      },
+      {
+        "name": "Gosau Kirchenwirt über Herrenweg",
+        "minutes": 210
+      },
+      {
+        "name": "Donnerkogelbahn-Bergstation",
         "minutes": 90
       }
     ],
@@ -18588,6 +18560,10 @@
       {
         "name": "Großer Donnerkogel/Klettersteig",
         "minutes": 150
+      },
+      {
+        "name": "Rottenhofhütte",
+        "minutes": 90
       },
       {
         "name": "Gosau über Herrenweg",
@@ -18927,133 +18903,48 @@
     "hutReservationId": "62",
     "edges": [
       {
-        "to": "0170",
-        "minutes": 165
-      },
-      {
-        "to": "0234",
-        "minutes": 165
+        "to": "0144",
+        "minutes": 450
       },
       {
         "to": "0602",
-        "minutes": 135
+        "minutes": 195
       },
       {
-        "to": "0144",
-        "minutes": 540
-      },
-      {
-        "to": "1350",
-        "minutes": 150
-      },
-      {
-        "to": "0144",
-        "minutes": 480
-      },
-      {
-        "to": "0126",
-        "minutes": null
+        "to": "0234",
+        "minutes": 300
       }
     ],
     "websites": [
       "http://www.glungezer-huette.at"
     ],
-    "bahnhof": "Hall in Tirol",
-    "bushaltestelle": "Tulfes",
-    "pkw": "Tulfes",
-    "parkmoeglichkeiten": "Tulfes",
+    "bahnhof": "Innsbruck Hauptbahnhof bzw. Hall in Tirol Bahnhof",
+    "bushaltestelle": "gut getakteten Busverbindungen; VVT‑Buslinie 540 - Haltestelle: Tulfes Glungezerbahn Talstation",
+    "pkw": "Inntalautobahn A12 – Autobahnausfahrt Hall-Mitte über die Landesstraße L9 bis nach Tulfes (ca. 7,5 km) zur Talstation der Glungezerbahn.",
+    "parkmoeglichkeiten": "Tulfes Glungezerbahn Talstation",
     "approaches": [
       {
-        "name": "Hall",
-        "minutes": null
+        "name": "Bergstation Patscherkofel",
+        "minutes": 195
       },
       {
-        "name": "Meissner Haus",
-        "minutes": 180
+        "name": "Ellbögen",
+        "minutes": 345
       },
       {
-        "name": "Patscherkofel Bergstation",
-        "minutes": 180
+        "name": "Glungezerbahn - Bergstation Tulfein",
+        "minutes": 110
+      },
+      {
+        "name": "Glungezerbahn - Mittelstation Halsmarter",
+        "minutes": 230
       },
       {
         "name": "Tulfes",
-        "minutes": 210
-      },
-      {
-        "name": "Voldertalhütte",
-        "minutes": 180
-      },
-      {
-        "name": "Lizumer Hütte",
-        "minutes": null
-      },
-      {
-        "name": "Tulfein Bergstation",
-        "minutes": 110
+        "minutes": 360
       }
     ],
-    "tours": [
-      {
-        "name": "Sonnenspitze",
-        "minutes": 10
-      },
-      {
-        "name": "Kreuzspitze",
-        "minutes": 150
-      },
-      {
-        "name": "Rosenjoch",
-        "minutes": 180
-      },
-      {
-        "name": "Viggarspitze",
-        "minutes": 90
-      },
-      {
-        "name": "Patscherkofel",
-        "minutes": 180
-      },
-      {
-        "name": "Naviser Jöchl",
-        "minutes": 300
-      },
-      {
-        "name": "Glungezer Klettersteig",
-        "minutes": 120
-      },
-      {
-        "name": "Lizum Überschreitung Rosenjoch - Navisjoch",
-        "minutes": null
-      },
-      {
-        "name": "Gwannsteig - Voldertal - Naviser Jöchl",
-        "minutes": null
-      },
-      {
-        "name": "Höhenweg",
-        "minutes": null
-      },
-      {
-        "name": "Glungezer-Panoramasteig",
-        "minutes": null
-      },
-      {
-        "name": "Viggartal",
-        "minutes": null
-      },
-      {
-        "name": "Halsmarter",
-        "minutes": null
-      },
-      {
-        "name": "Inntaler Höhenweg zur Lizumerhütte",
-        "minutes": null
-      },
-      {
-        "name": "Kreuzspitze - Rosenjoch - Naviser Jöchl",
-        "minutes": null
-      }
-    ]
+    "tours": []
   },
   {
     "id": "0079",
@@ -20804,7 +20695,7 @@
     "name": "Hofpürgl-Hütte",
     "elevation": "1705 m",
     "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=0108",
-    "phone": "bei Hüttenbetrieb +43 6453 8304",
+    "phone": "+43 6453 8304 bei Hüttenbetrieb",
     "lat": 47.482302,
     "lon": 13.519134,
     "gebirgsgruppe": "Dachsteingebirge",
@@ -23025,10 +22916,6 @@
       {
         "to": "1252",
         "minutes": 390
-      },
-      {
-        "to": "1350",
-        "minutes": 345
       }
     ],
     "websites": [
@@ -23044,14 +22931,6 @@
         "minutes": 150
       },
       {
-        "name": "Navis (über Klammjoch)",
-        "minutes": 315
-      },
-      {
-        "name": "Navis (über Recknersattel)",
-        "minutes": 420
-      },
-      {
         "name": "Lager Walchen (über Mölstal)",
         "minutes": 255
       },
@@ -23062,6 +22941,14 @@
       {
         "name": "Lanersbach (über Torjoch)",
         "minutes": 300
+      },
+      {
+        "name": "Hintertux (über Geierjoch)",
+        "minutes": 345
+      },
+      {
+        "name": "Navis (über Klammjoch)",
+        "minutes": 315
       }
     ],
     "tours": []
@@ -26694,7 +26581,7 @@
     "lon": 11.288375,
     "gebirgsgruppe": "Karwendel",
     "bundesland": "Tirol",
-    "hutReservationId": null,
+    "hutReservationId": "714",
     "edges": [
       {
         "to": "0175",
@@ -40761,7 +40648,7 @@
     "name": "Wiesbadener Hütte",
     "elevation": "2443 m",
     "link": "https://www.alpenverein.at/huetten/index.php?huette_nr=0653",
-    "phone": "0043/5558/4233",
+    "phone": "0043 5444 5205",
     "lat": 46.868055555556,
     "lon": 10.116111111111,
     "gebirgsgruppe": "Silvretta",
@@ -44114,10 +44001,6 @@
     "bundesland": "Deutschland",
     "hutReservationId": "344",
     "edges": [
-      {
-        "to": "0206",
-        "minutes": null
-      },
       {
         "to": "0587",
         "minutes": null
