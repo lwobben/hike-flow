@@ -114,6 +114,8 @@ export default function HutsMap() {
   const [bedsNeeded, setBedsNeeded] = useState(2);
   const [hutSearch, setHutSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const searchRef = useRef(null);
 
   const defaultFrom = new Date(
@@ -340,6 +342,10 @@ export default function HutsMap() {
     };
   }, [addEdgeLayer]);
 
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+
   // Close search dropdown on outside click
   useEffect(() => {
     if (!searchOpen) return;
@@ -466,12 +472,50 @@ export default function HutsMap() {
   })();
 
   return (
-    <div style={{ width: 1100 }}>
+    <div style={{ width: isMobile ? "100%" : 1100 }}>
+      {isMobile && !disclaimerDismissed && (
+        <div
+          style={{
+            background: "var(--huts-disclaimer-bg, #fffbeb)",
+            border: "1px solid var(--huts-disclaimer-border, #f59e0b)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginBottom: 12,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            fontSize: "0.85em",
+            color: "var(--huts-disclaimer-text, #78350f)",
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            This app is not optimized for mobile use. For the best experience, open it on a desktop or laptop.
+          </span>
+          <button
+            onClick={() => setDisclaimerDismissed(true)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--huts-disclaimer-text, #78350f)",
+              fontWeight: 700,
+              fontSize: "1.1em",
+              lineHeight: 1,
+              flexShrink: 0,
+              padding: "0 2px",
+            }}
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 40,
+          flexWrap: "wrap",
+          gap: isMobile ? 10 : 40,
           marginBottom: 8,
         }}
       >
@@ -488,10 +532,10 @@ export default function HutsMap() {
             onFocus={() => hutSearch.trim() && setSearchOpen(true)}
             style={{
               padding: "4px 8px",
-              border: "1px solid #ccc",
+              border: "1px solid var(--huts-ctrl-border, #ccc)",
               borderRadius: 4,
               fontSize: "0.85em",
-              width: 180,
+              width: isMobile ? "100%" : 180,
             }}
           />
           {searchOpen && searchResults.length > 0 && (
@@ -501,8 +545,8 @@ export default function HutsMap() {
                 top: "calc(100% + 4px)",
                 left: 0,
                 width: 260,
-                background: "#fff",
-                border: "1px solid #ddd",
+                background: "var(--huts-dropdown-bg, #fff)",
+                border: "1px solid var(--huts-dropdown-border, #ddd)",
                 borderRadius: 4,
                 boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
                 margin: 0,
@@ -517,21 +561,16 @@ export default function HutsMap() {
                 <li
                   key={h.id}
                   onClick={() => selectHutFromSearch(h)}
+                  className="huts-search-item"
                   style={{
                     padding: "7px 12px",
                     cursor: "pointer",
                     fontSize: "0.85em",
-                    borderBottom: "1px solid #f0f0f0",
+                    borderBottom: "1px solid var(--huts-dropdown-border, #f0f0f0)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     gap: 8,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#f0f7ff";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#fff";
                   }}
                 >
                   <span
@@ -600,7 +639,7 @@ export default function HutsMap() {
                 alignItems: "center",
                 gap: 4,
                 fontSize: "0.85em",
-                color: "#555",
+                color: "var(--huts-ctrl-muted, #555)",
               }}
             >
               Beds:
@@ -615,7 +654,7 @@ export default function HutsMap() {
                 style={{
                   width: 48,
                   padding: "3px 5px",
-                  border: "1px solid #ccc",
+                  border: "1px solid var(--huts-ctrl-border, #ccc)",
                   borderRadius: 4,
                   fontSize: "0.85em",
                 }}
@@ -659,8 +698,8 @@ export default function HutsMap() {
         ref={containerRef}
         style={{
           position: "relative",
-          width: 1100,
-          height: 700,
+          width: "100%",
+          height: isMobile ? "min(500px, calc(100dvh - 260px))" : 700,
           border: "1px solid #ddd",
         }}
       >

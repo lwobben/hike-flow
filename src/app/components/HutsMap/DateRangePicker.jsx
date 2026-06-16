@@ -134,12 +134,12 @@ export default function DateRangePicker({ dateFrom, dateTo, onChange }) {
         onClick={openPicker}
         style={{
           padding: "4px 10px",
-          border: "1px solid #ccc",
+          border: "1px solid var(--huts-ctrl-border, #ccc)",
           borderRadius: 4,
-          background: "#fff",
+          background: "var(--huts-ctrl-bg, #fff)",
           cursor: "pointer",
           fontSize: "0.85em",
-          color: "#333",
+          color: "var(--huts-ctrl-text, #333)",
           whiteSpace: "nowrap",
         }}
       >
@@ -152,8 +152,8 @@ export default function DateRangePicker({ dateFrom, dateTo, onChange }) {
             position: "absolute",
             top: "calc(100% + 6px)",
             left: 0,
-            background: "#fff",
-            border: "1px solid #ddd",
+            background: "var(--huts-dropdown-bg, #fff)",
+            border: "1px solid var(--huts-dropdown-border, #ddd)",
             borderRadius: 8,
             boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
             padding: "14px 16px",
@@ -185,7 +185,7 @@ export default function DateRangePicker({ dateFrom, dateTo, onChange }) {
                 style={{
                   textAlign: "center",
                   fontSize: "0.72em",
-                  color: "#aaa",
+                  color: "var(--huts-ctrl-faint, #aaa)",
                   paddingBottom: 4,
                 }}
               >
@@ -203,7 +203,7 @@ export default function DateRangePicker({ dateFrom, dateTo, onChange }) {
               const isToday = dateStr === today;
 
               let bg = "transparent";
-              let color = "#333";
+              let color = "var(--huts-ctrl-text, #333)";
               let borderRadius = "50%";
 
               if (state === "start" || state === "single") {
@@ -215,8 +215,8 @@ export default function DateRangePicker({ dateFrom, dateTo, onChange }) {
                 color = "#fff";
                 borderRadius = "50%";
               } else if (state === "mid") {
-                bg = "#dbeafe";
-                color = "#1d4ed8";
+                bg = "var(--huts-calendar-mid-bg, #dbeafe)";
+                color = "var(--huts-calendar-mid-text, #1d4ed8)";
                 borderRadius = "0";
               }
 
@@ -261,7 +261,7 @@ export default function DateRangePicker({ dateFrom, dateTo, onChange }) {
             style={{
               marginTop: 10,
               fontSize: "0.72em",
-              color: "#aaa",
+              color: "var(--huts-ctrl-faint, #aaa)",
               textAlign: "center",
             }}
           >
@@ -278,7 +278,7 @@ const navBtn = {
   border: "none",
   cursor: "pointer",
   fontSize: "1.3em",
-  color: "#555",
+  color: "var(--huts-ctrl-muted, #555)",
   padding: "2px 8px",
   lineHeight: 1,
   borderRadius: 4,

@@ -18,6 +18,11 @@ export const metadata = {
   description: "Plan your Hut2Hut tour",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
