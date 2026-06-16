@@ -161,9 +161,9 @@ export default function PlanTourModal({
   return (
     <div
       style={{
-        width: 1100,
-        background: "#fff",
-        border: "1px solid #ddd",
+        width: "100%",
+        background: "var(--huts-ctrl-bg, #fff)",
+        border: "1px solid var(--huts-ctrl-border, #ddd)",
         borderRadius: 6,
         boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
         marginBottom: 8,
@@ -178,8 +178,8 @@ export default function PlanTourModal({
           justifyContent: "space-between",
           alignItems: "center",
           padding: "10px 16px",
-          borderBottom: "1px solid #eee",
-          background: "#fafafa",
+          borderBottom: "1px solid var(--huts-ctrl-border, #eee)",
+          background: "var(--huts-ctrl-bg-alt, #fafafa)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -386,7 +386,7 @@ export default function PlanTourModal({
           <div
             style={{
               fontSize: "0.78em",
-              color: "#777",
+              color: "var(--huts-ctrl-muted, #777)",
               marginBottom: 8,
               display: "flex",
               alignItems: "center",
@@ -420,7 +420,7 @@ export default function PlanTourModal({
               }}
             >
               <thead
-                style={{ position: "sticky", top: 0, zIndex: 2, background: "#fff" }}
+                style={{ position: "sticky", top: 0, zIndex: 2, background: "var(--huts-ctrl-bg, #fff)" }}
               >
                 <tr>
                   <th
@@ -432,7 +432,7 @@ export default function PlanTourModal({
                       minWidth: 160,
                       position: "sticky",
                       left: 0,
-                      background: "#fff",
+                      background: "var(--huts-ctrl-bg, #fff)",
                     }}
                   >
                     Hut
@@ -464,7 +464,7 @@ export default function PlanTourModal({
                   return (
                     <tr
                       key={h._uid}
-                      style={{ background: idx % 2 === 0 ? "#fafafa" : "#fff" }}
+                      style={{ background: idx % 2 === 0 ? "var(--huts-ctrl-bg-alt, #fafafa)" : "var(--huts-ctrl-bg, #fff)" }}
                     >
                       <td
                         style={{
@@ -472,7 +472,7 @@ export default function PlanTourModal({
                           borderBottom: "1px solid #eee",
                           position: "sticky",
                           left: 0,
-                          background: idx % 2 === 0 ? "#fafafa" : "#fff",
+                          background: idx % 2 === 0 ? "var(--huts-ctrl-bg-alt, #fafafa)" : "var(--huts-ctrl-bg, #fff)",
                           zIndex: 1,
                         }}
                       >

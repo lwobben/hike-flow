@@ -117,6 +117,7 @@ export default function HutsMap() {
   const [isMobile, setIsMobile] = useState(false);
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const searchRef = useRef(null);
+  const ignoreNextMapClick = useRef(false);
 
   const defaultFrom = new Date(
     new Date().getFullYear(),
@@ -332,7 +333,13 @@ export default function HutsMap() {
       addEdgeLayer();
     });
     map.on("move", () => forceUpdate((t) => t + 1));
-    map.on("click", () => setPopup(null));
+    map.on("click", () => {
+      if (ignoreNextMapClick.current) {
+        ignoreNextMapClick.current = false;
+        return;
+      }
+      setPopup(null);
+    });
 
     mapRef.current = map;
     return () => {
@@ -445,6 +452,7 @@ export default function HutsMap() {
     setHutSearch("");
     setSearchOpen(false);
     if (mapRef.current) {
+      ignoreNextMapClick.current = true;
       mapRef.current.flyTo({
         center: [h.lon, h.lat],
         zoom: Math.max(mapRef.current.getZoom(), 11),
@@ -818,7 +826,7 @@ export default function HutsMap() {
           gap: 16,
           marginTop: 8,
           fontSize: "0.85em",
-          color: "#444",
+          color: "var(--huts-ctrl-text, #444)",
         }}
       >
         <div
