@@ -133,6 +133,8 @@ a.secondary {
 
   .main {
     align-items: center;
+    width: 100%;
+    min-width: 0;
   }
 
   .main ol {
@@ -160,9 +162,3 @@ a.secondary {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
-    mix-blend-mode: screen;
-  }
-}

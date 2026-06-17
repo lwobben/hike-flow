@@ -58,29 +58,6 @@
     --chart-5: 340 75% 55%;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: 240 10% 3.9%;
-      --foreground: 0 0% 98%;
-      --card: 240 10% 3.9%;
-      --card-foreground: 0 0% 98%;
-      --popover: 240 10% 3.9%;
-      --popover-foreground: 0 0% 98%;
-      --primary: 0 0% 98%;
-      --primary-foreground: 240 5.9% 10%;
-      --secondary: 240 3.7% 15.9%;
-      --secondary-foreground: 0 0% 98%;
-      --muted: 240 3.7% 15.9%;
-      --muted-foreground: 240 5% 64.9%;
-      --accent: 240 3.7% 15.9%;
-      --accent-foreground: 0 0% 98%;
-      --destructive: 0 62.8% 30.6%;
-      --destructive-foreground: 0 0% 98%;
-      --border: 240 3.7% 15.9%;
-      --input: 240 3.7% 15.9%;
-      --ring: 240 4.9% 83.9%;
-    }
-  }
 }
 
 @layer base {
@@ -172,11 +149,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
 
 :root {
   --huts-ctrl-bg: #fff;
@@ -195,43 +167,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --huts-disclaimer-text: #78350f;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --huts-ctrl-bg: #1e1e2e;
-    --huts-ctrl-bg-alt: #252535;
-    --huts-ctrl-border: #555;
-    --huts-ctrl-text: #e0e0e0;
-    --huts-ctrl-muted: #bbb;
-    --huts-ctrl-faint: #666;
-    --huts-dropdown-bg: #1e1e2e;
-    --huts-dropdown-border: #444;
-    --huts-item-hover: #2a2a42;
-    --huts-calendar-mid-bg: #1e3a5f;
-    --huts-calendar-mid-text: #93c5fd;
-    --huts-disclaimer-bg: #2d2000;
-    --huts-disclaimer-border: #b45309;
-    --huts-disclaimer-text: #fcd34d;
-  }
-
-  .maplibregl-ctrl-group {
-    background-color: #1e1e2e !important;
-    border-color: #555 !important;
-  }
-
-  .maplibregl-ctrl-group button {
-    background-color: #1e1e2e !important;
-  }
-
-  .maplibregl-ctrl-group button:hover {
-    background-color: #252535 !important;
-  }
-
-  .maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon,
-  .maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon,
-  .maplibregl-ctrl-compass .maplibregl-ctrl-icon {
-    filter: invert(1);
-  }
-}
 
 .huts-search-item:hover {
   background: var(--huts-item-hover) !important;

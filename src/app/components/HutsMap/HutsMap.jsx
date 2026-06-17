@@ -544,6 +544,7 @@ export default function HutsMap() {
               borderRadius: 4,
               fontSize: "0.85em",
               width: isMobile ? "100%" : 180,
+              background: "#fff",
             }}
           />
           {searchOpen && searchResults.length > 0 && (
@@ -665,6 +666,7 @@ export default function HutsMap() {
                   border: "1px solid var(--huts-ctrl-border, #ccc)",
                   borderRadius: 4,
                   fontSize: "0.85em",
+                  background: "#fff",
                 }}
               />
             </label>
