@@ -464,6 +464,8 @@ export default function HutsMap() {
         ...prev,
         { ...h, _uid: crypto.randomUUID() },
       ]);
+    } else if (mapRef.current) {
+      mapRef.current.once("moveend", () => openHutPopup(h));
     } else {
       openHutPopup(h);
     }

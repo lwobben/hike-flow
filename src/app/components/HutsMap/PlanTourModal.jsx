@@ -550,14 +550,6 @@ export default function PlanTourModal({
                                 </a>
                               </>
                             )}
-                          {!h.hutReservationId && (
-                            <>
-                              <span style={{ color: "#aaa", fontSize: "0.9em" }}>·</span>
-                              <span style={{ color: "#ccc", fontSize: "0.78em" }}>
-                                direct booking
-                              </span>
-                            </>
-                          )}
                         </div>
                       </td>
                       {dates.map((d) => (
@@ -587,6 +579,7 @@ export default function PlanTourModal({
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
               gap: 16,
               marginTop: 10,
               fontSize: "0.75em",
@@ -622,6 +615,18 @@ export default function PlanTourModal({
                 }}
               />
               Fewer than {bedsNeeded}
+            </span>
+            <span>
+              <span
+                style={{
+                  color: "#f97316",
+                  fontWeight: 700,
+                  marginRight: 4,
+                }}
+              >
+                ?
+              </span>
+              Not known, book directly with the hut
             </span>
           </div>
         </div>
