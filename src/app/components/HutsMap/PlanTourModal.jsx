@@ -428,8 +428,7 @@ export default function PlanTourModal({
                       textAlign: "left",
                       padding: "5px 10px",
                       borderBottom: "2px solid #e5e5e5",
-                      whiteSpace: "nowrap",
-                      minWidth: 160,
+                      maxWidth: "33vw",
                       position: "sticky",
                       left: 0,
                       background: "var(--huts-ctrl-bg, #fff)",
@@ -472,16 +471,15 @@ export default function PlanTourModal({
                           borderBottom: "1px solid #eee",
                           position: "sticky",
                           left: 0,
+                          maxWidth: "33vw",
                           background: idx % 2 === 0 ? "var(--huts-ctrl-bg-alt, #fafafa)" : "var(--huts-ctrl-bg, #fff)",
                           zIndex: 1,
                         }}
                       >
                         <div
                           style={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
                             fontWeight: 600,
+                            wordBreak: "break-word",
                           }}
                           title={h.name}
                         >
