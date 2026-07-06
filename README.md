@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# hike-flow
 
-## Getting Started
+Live at [hut2hut.app](https://hut2hut.app).
 
-First, run the development server:
+A Next.js app for planning hut-to-hut hiking tours in the Alps. Browse huts on a map, pick a date range, check real-time availability, and plan multi-day routes between neighboring huts.
+
+Data comes from the Alpenverein (Austrian Alpine Club) — hut locations, walking times between neighbors, and live bed availability all pulled from their site.
+
+## What it does
+
+- Interactive map of Alpine huts (MapLibre GL)
+- Click any hut to see its details, neighbors, and walking times to the next hut
+- Date range picker to filter availability
+- Availability check against the Alpenverein booking system
+- Tour planning modal to chain huts into a multi-day itinerary
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Project structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/
+    api/
+      huts/          # serves hut data from data/huts-combined.json
+      availability/  # proxies availability requests to Alpenverein
+    components/
+      HutsMap/       # map, hut popups, date picker, tour planning modal
+    page.js
+    layout.js
+  components/ui/     # shared UI primitives (shadcn)
+  lib/utils.js
 
-## Learn More
+data/                # static JSON built by the scrape scripts
+scripts/             # data pipeline (fetch, scrape, merge)
+```
 
-To learn more about Next.js, take a look at the following resources:
+The app reads from `data/huts-combined.json` at runtime. That file is built by the scrape scripts and committed to the repo, so you don't need to run the scripts to use the app. Re-run them when you want to refresh hut data.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [scripts/README.md](scripts/README.md) for details on the data pipeline.
