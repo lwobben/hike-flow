@@ -25,7 +25,13 @@ const tooltipStyle = {
   pointerEvents: "none",
 };
 
-export default function HutPopup({ popup, dateFrom, dateTo, showAvailability, bedsNeeded = 1 }) {
+export default function HutPopup({
+  popup,
+  dateFrom,
+  dateTo,
+  showAvailability,
+  bedsNeeded = 1,
+}) {
   const [hovered, setHovered] = useState(null);
   if (!popup) return null;
 
@@ -175,7 +181,8 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability, be
                     .filter(Boolean)
                     .map(([label, value]) => (
                       <div key={label} style={{ marginBottom: 4 }}>
-                        <strong style={{ color: "#666" }}>{label}:</strong> {value}
+                        <strong style={{ color: "#666" }}>{label}:</strong>{" "}
+                        {value}
                       </div>
                     ))}
                   {popup.approaches?.length > 0 && (
@@ -351,9 +358,17 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability, be
                               padding: "2px 0",
                             }}
                           >
-                            {n.minutes !== null
-                              ? formatMinutes(n.minutes)
-                              : <>? <i>(other direction: {formatMinutes(n.reverseMinutes)})</i></>}
+                            {n.minutes !== null ? (
+                              formatMinutes(n.minutes)
+                            ) : (
+                              <>
+                                ?{" "}
+                                <i>
+                                  (other direction:{" "}
+                                  {formatMinutes(n.reverseMinutes)})
+                                </i>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -380,7 +395,8 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability, be
           )}
           {showAvailability && !popup.hutReservationId && (
             <div style={{ color: "#999", fontSize: "0.85em" }}>
-              Availability not listed online
+              Availability not listed online for huts shown as ●{" "}
+              <i>(see legend below)</i>
             </div>
           )}
           {popup.availability && (
@@ -430,15 +446,32 @@ export default function HutPopup({ popup, dateFrom, dateTo, showAvailability, be
                             ? "ℹ"
                             : ""}
                         </span>
-                        <span style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                        <span
+                          style={{ display: "flex", gap: 5, flexShrink: 0 }}
+                        >
                           {(() => {
-                            const [y, m, d] = e.date.slice(0, 10).split("-").map(Number);
-                            const day = ["Su.", "Mo.", "Tu.", "We.", "Th.", "Fr.", "Sa."][new Date(y, m - 1, d).getDay()];
+                            const [y, m, d] = e.date
+                              .slice(0, 10)
+                              .split("-")
+                              .map(Number);
+                            const day = [
+                              "Su.",
+                              "Mo.",
+                              "Tu.",
+                              "We.",
+                              "Th.",
+                              "Fr.",
+                              "Sa.",
+                            ][new Date(y, m - 1, d).getDay()];
                             const formatted = `${String(d).padStart(2, "0")}-${String(m).padStart(2, "0")}-${y}`;
                             return (
                               <>
-                                <span style={{ width: 28, flexShrink: 0 }}>{day}</span>
-                                <span style={{ width: 95, flexShrink: 0 }}>{formatted}</span>
+                                <span style={{ width: 28, flexShrink: 0 }}>
+                                  {day}
+                                </span>
+                                <span style={{ width: 95, flexShrink: 0 }}>
+                                  {formatted}
+                                </span>
                               </>
                             );
                           })()}

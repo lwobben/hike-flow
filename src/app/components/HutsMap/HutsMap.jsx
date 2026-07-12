@@ -40,6 +40,7 @@ const MAP_STYLES = {
         type: "raster",
         tiles: ["https://a.tile.opentopomap.org/{z}/{x}/{y}.png"],
         tileSize: 256,
+        maxzoom: 17,
         attribution: "© OpenTopoMap contributors, © OpenStreetMap contributors",
       },
     },
@@ -327,6 +328,11 @@ export default function HutsMap() {
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
+    map.on("error", (e) => {
+      if (e.error?.status === 0 || e.sourceId || e.tile) return;
+      console.error(e.error);
+    });
+
     map.on("load", () => {
       mapLoadedRef.current = true;
       forceUpdate((t) => t + 1);
@@ -482,7 +488,7 @@ export default function HutsMap() {
   })();
 
   return (
-    <div style={{ width: isMobile ? "100%" : 1100 }}>
+    <div style={{ width: isMobile ? "100%" : "min(92vw, 1600px)" }}>
       {isMobile && !disclaimerDismissed && (
         <div
           style={{
@@ -711,7 +717,7 @@ export default function HutsMap() {
         style={{
           position: "relative",
           width: "100%",
-          height: isMobile ? "min(500px, calc(100dvh - 260px))" : 700,
+          height: isMobile ? "min(500px, calc(100dvh - 260px))" : "calc(100dvh - 320px)",
           border: "1px solid #ddd",
         }}
       >

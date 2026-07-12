@@ -28,6 +28,28 @@ export default function Home() {
 
         <HutsMap />
       </main>
+
+      <section className={styles.disclaimers}>
+        <p>
+          <strong>Early access:</strong> Hut2Hut is continuously evolving. At
+          the moment only huts from the Austrian Alpenverein are available as
+          a source. More countries and regions are on the way.
+        </p>
+        <p>
+          <strong>Safety:</strong> Mountain hiking carries real risks. Always
+          check weather conditions, carry appropriate gear, and know your
+          limits. We are not responsible for any incidents, injuries, or
+          losses that may occur. If you are inexperienced, consider hiring a
+          certified mountain guide before heading out.
+        </p>
+        <p>
+          <strong>Hiking times:</strong> The durations shown are sourced from
+          the Alpenverein neighbouring huts pages and are reference values
+          only. Your actual time may be shorter or longer depending on
+          fitness, pack weight, and conditions. There may also be multiple
+          routes between two huts with different difficulties and durations.
+        </p>
+      </section>
     </div>
   );
 }

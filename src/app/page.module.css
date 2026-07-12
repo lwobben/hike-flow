@@ -7,11 +7,11 @@
   --button-secondary-hover: #f2f2f2;
 
   display: grid;
-  grid-template-rows: 20px 1fr 20px;
+  grid-template-rows: 20px 1fr auto;
   align-items: center;
   justify-items: center;
   min-height: 100svh;
-  padding: 40px;
+  padding: 40px 40px 16px;
   gap: 32px;
   font-family: var(--font-geist-sans);
 }
@@ -89,6 +89,30 @@ a.primary {
 a.secondary {
   border-color: var(--gray-alpha-200);
   min-width: 158px;
+}
+
+.disclaimers {
+  grid-row: 3;
+  width: 100%;
+  margin-top: 100px;
+  padding: 24px 40px 8px;
+  border-top: 1px solid var(--gray-alpha-200);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(var(--gray-rgb), 0.4);
+}
+
+.disclaimers p {
+  margin: 0;
+  flex: 1 1 240px;
+}
+
+.disclaimers strong {
+  color: rgba(var(--gray-rgb), 0.5);
 }
 
 .footer {
