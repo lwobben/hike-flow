@@ -1,0 +1,291 @@
+.section {
+  width: min(92vw, 1600px);
+  margin-top: 48px;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.sourceLink {
+  display: flex;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.35);
+  transition: color 0.15s;
+}
+
+.sourceLink:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 820px;
+}
+
+.table thead tr {
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 2;
+}
+
+.table th {
+  text-align: left;
+  padding: 11px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 0.12s;
+  cursor: default;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.025);
+}
+
+.table td {
+  padding: 12px 14px;
+  vertical-align: top;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.tourName {
+  white-space: nowrap;
+}
+
+.tourMeta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.tourMetaLink {
+  color: rgba(0, 0, 0, 0.38);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.12s;
+}
+
+.tourMetaLink:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tourMeta {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .tourMetaLink {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .tourMetaLink:hover {
+    color: rgba(255, 255, 255, 0.65);
+  }
+}
+
+.description {
+  color: rgba(0, 0, 0, 0.55);
+  min-width: 220px;
+  max-width: 300px;
+}
+
+.days {
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.daysHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.infoIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.3);
+  font-size: 9px;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.4);
+  cursor: help;
+  line-height: 1;
+  font-weight: 600;
+  font-family: Georgia, serif;
+  flex-shrink: 0;
+}
+
+.tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  width: 340px;
+  background: #1a1a1a;
+  color: #f0f0f0;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px 15px;
+  border-radius: 7px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: #1a1a1a;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.beginner {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.beginnerIntermediate {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.intermediate {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.advanced {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tableWrap {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .table thead tr {
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .table th {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .table tbody tr {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .table td {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .description {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .eyebrow {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .sourceLink {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .sourceLink:hover {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .beginner {
+    background: rgba(21, 128, 61, 0.2);
+    color: #4ade80;
+  }
+
+  .beginnerIntermediate {
+    background: rgba(4, 120, 87, 0.2);
+    color: #34d399;
+  }
+
+  .intermediate {
+    background: rgba(180, 83, 9, 0.2);
+    color: #fbbf24;
+  }
+
+  .advanced {
+    background: rgba(185, 28, 28, 0.2);
+    color: #f87171;
+  }
+}
+
+@media (max-width: 600px) {
+  .section {
+    width: 100%;
+    margin-top: 36px;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+}
