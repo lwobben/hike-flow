@@ -117,6 +117,7 @@ export default function HutsMap() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
+  const [mapInteractive, setMapInteractive] = useState(false);
   const searchRef = useRef(null);
   const ignoreNextMapClick = useRef(false);
 
@@ -327,9 +328,18 @@ export default function HutsMap() {
       style: MAP_STYLES.minimal,
       center: [13.4, 47.2],
       zoom: 6,
-      // Let one-finger page scroll work on mobile; map needs two fingers to pan/zoom.
-      cooperativeGestures: mobile,
     });
+
+    if (mobile) {
+      map.dragPan.disable();
+      map.scrollZoom.disable();
+      map.boxZoom.disable();
+      map.dragRotate.disable();
+      map.keyboard.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoomRotate.disable();
+      map.touchPitch.disable();
+    }
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
@@ -359,6 +369,31 @@ export default function HutsMap() {
       mapRef.current = null;
     };
   }, [addEdgeLayer]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMobile) return;
+
+    if (mapInteractive) {
+      map.dragPan.enable();
+      map.scrollZoom.enable();
+      map.boxZoom.enable();
+      map.dragRotate.enable();
+      map.keyboard.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoomRotate.enable();
+      map.touchPitch.enable();
+    } else {
+      map.dragPan.disable();
+      map.scrollZoom.disable();
+      map.boxZoom.disable();
+      map.dragRotate.disable();
+      map.keyboard.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoomRotate.disable();
+      map.touchPitch.disable();
+    }
+  }, [mapInteractive, isMobile]);
 
   // Close search dropdown on outside click
   useEffect(() => {
@@ -719,10 +754,45 @@ export default function HutsMap() {
           position: "relative",
           width: "100%",
           height: isMobile ? "min(500px, calc(100dvh - 260px))" : "calc(100dvh - 320px)",
-          border: "1px solid #ddd",
+          border: mapInteractive ? "1px solid #0070f3" : "1px solid #ddd",
+          boxShadow: mapInteractive ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : undefined,
         }}
       >
-        <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+        <div
+          ref={mapContainer}
+          style={{
+            width: "100%",
+            height: "100%",
+            // Locked: allow page scroll over the map. Unlocked: keep gestures on the map.
+            touchAction: isMobile && !mapInteractive ? "pan-y" : "none",
+          }}
+        />
+
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setMapInteractive((v) => !v)}
+            style={{
+              position: "absolute",
+              top: 8,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 12,
+              padding: "8px 14px",
+              borderRadius: 8,
+              border: "1px solid rgba(0,0,0,0.12)",
+              background: mapInteractive ? "#0070f3" : "rgba(255,255,255,0.95)",
+              color: mapInteractive ? "#fff" : "#222",
+              fontSize: "0.85em",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {mapInteractive ? "Done moving map" : "Move map"}
+          </button>
+        )}
 
         <div
           style={{
