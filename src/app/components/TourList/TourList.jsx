@@ -205,6 +205,46 @@ function LevelBadge({ level }) {
   );
 }
 
+function routeEndpoints(tour) {
+  return tour.start === tour.end
+    ? `Start & end: ${tour.start}`
+    : `Start: ${tour.start} · End: ${tour.end}`;
+}
+
+function stagesLabel(days) {
+  return days === "varies" ? "stages vary" : `${days} stages`;
+}
+
+function TourSourceLink({ tour }) {
+  if (tour.paragraph) {
+    return (
+      <span className={styles.tourMeta}>
+        Paragraph {tour.paragraph} of{" "}
+        <a
+          href={tour.url}
+          target="_blank"
+          rel="noopener"
+          className={styles.tourMetaLink}
+        >
+          <ExternalIcon />
+        </a>
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={tour.url}
+      target="_blank"
+      rel="noopener"
+      className={styles.tourMetaLink}
+      aria-label={`Open details for ${tour.title}`}
+    >
+      <ExternalIcon />
+    </a>
+  );
+}
+
 const TOOLTIP_TEXT = (
   <>
     The number of stages provides a guideline for the length of your trip, but
@@ -272,6 +312,26 @@ export default function TourList() {
         </a>
       </div>
 
+      <ol className={styles.mobileList}>
+        {TOURS.map((tour, index) => (
+          <li key={tour.id} className={styles.mobileItem} data-tour-id={tour.id}>
+            <div className={styles.mobileTitleRow}>
+              <span className={styles.mobileIndex}>{index + 1}.</span>
+              <span className={styles.mobileTitle}>{tour.title}</span>
+              <TourSourceLink tour={tour} />
+            </div>
+            <p className={styles.mobileSubline}>
+              {tour.area} · {stagesLabel(tour.days)}
+            </p>
+            <p className={styles.mobileDescription}>{tour.description}</p>
+            <p className={styles.mobileMeta}>
+              {routeEndpoints(tour)} · Effort: {tour.heaviness} · Level:{" "}
+              {tour.level}
+            </p>
+          </li>
+        ))}
+      </ol>
+
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
@@ -293,28 +353,7 @@ export default function TourList() {
               <tr key={tour.id} data-tour-id={tour.id}>
                 <td className={styles.tourName}>
                   <div>{tour.title}</div>
-                  {tour.paragraph ? (
-                    <div className={styles.tourMeta}>
-                      Paragraph {tour.paragraph} of{" "}
-                      <a
-                        href={tour.url}
-                        target="_blank"
-                        rel="noopener"
-                        className={styles.tourMetaLink}
-                      >
-                        <ExternalIcon />
-                      </a>
-                    </div>
-                  ) : (
-                    <a
-                      href={tour.url}
-                      target="_blank"
-                      rel="noopener"
-                      className={styles.tourMetaLink}
-                    >
-                      <ExternalIcon />
-                    </a>
-                  )}
+                  <TourSourceLink tour={tour} />
                 </td>
                 <td className={styles.description}>{tour.description}</td>
                 <td className={styles.days}>{tour.days}</td>

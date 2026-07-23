@@ -93,7 +93,7 @@
 
 
 
-.main ol {
+.steps {
   font-family: var(--font-geist-mono);
   padding-left: 0;
   margin: 0;
@@ -103,7 +103,7 @@
   list-style-position: inside;
 }
 
-.main li:not(:last-of-type) {
+.steps li:not(:last-of-type) {
   margin-bottom: 8px;
 }
 
@@ -216,7 +216,7 @@ a.secondary {
     min-width: 0;
   }
 
-  .main ol {
+  .steps {
     text-align: center;
   }
 

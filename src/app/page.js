@@ -56,7 +56,7 @@ export default function Home() {
           </p>
         </div>
 
-        <ol>
+        <ol className={styles.steps}>
           <li>Choose your trail</li>
           <li>Reserve cozy huts along the way</li>
           <li>Pack your gear</li>

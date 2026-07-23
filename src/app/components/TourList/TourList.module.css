@@ -1,6 +1,8 @@
 .section {
   width: min(92vw, 1600px);
   margin-top: 48px;
+  font-family: var(--font-geist-sans);
+  font-weight: 400;
 }
 
 .heading {
@@ -45,7 +47,8 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.9rem;
+  font-weight: 400;
   min-width: 820px;
 }
 
@@ -89,12 +92,80 @@
 
 .tourName {
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .tourMeta {
   margin-top: 4px;
   font-size: 11px;
   color: rgba(0, 0, 0, 0.38);
+}
+
+.mobileList {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobileItem {
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mobileItem:first-child {
+  padding-top: 4px;
+}
+
+.mobileItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mobileTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+}
+
+.mobileIndex {
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.mobileTitle {
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.mobileTitleRow .tourMeta {
+  margin-top: 0;
+}
+
+.mobileSubline {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.6;
+}
+
+.mobileDescription {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.75;
+  color: rgba(0, 0, 0, 0.68);
+}
+
+.mobileMeta {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.5);
 }
 
 .tourMetaLink {
@@ -279,7 +350,33 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (prefers-color-scheme: dark) {
+  .mobileItem {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobileIndex {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .mobileTitle {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .mobileSubline {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .mobileDescription {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .mobileMeta {
+    color: rgba(255, 255, 255, 0.45);
+  }
+}
+
+@media (max-width: 700px) {
   .section {
     width: 100%;
     margin-top: 36px;
@@ -287,5 +384,13 @@
 
   .title {
     font-size: 1rem;
+  }
+
+  .mobileList {
+    display: block;
+  }
+
+  .tableWrap {
+    display: none;
   }
 }
