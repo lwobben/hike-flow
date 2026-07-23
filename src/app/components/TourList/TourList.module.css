@@ -181,20 +181,6 @@
   color: rgba(0, 0, 0, 0.7);
 }
 
-@media (prefers-color-scheme: dark) {
-  .tourMeta {
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .tourMetaLink {
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .tourMetaLink:hover {
-    color: rgba(255, 255, 255, 0.65);
-  }
-}
-
 .description {
   color: rgba(0, 0, 0, 0.55);
   min-width: 220px;
@@ -286,99 +272,6 @@
 .advanced {
   background: #fee2e2;
   color: #b91c1c;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tableWrap {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .table thead tr {
-    background: rgba(255, 255, 255, 0.04);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .table th {
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  .table tbody tr {
-    border-bottom-color: rgba(255, 255, 255, 0.06);
-  }
-
-  .table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .table td {
-    color: rgba(255, 255, 255, 0.75);
-  }
-
-  .description {
-    color: rgba(255, 255, 255, 0.5);
-  }
-
-  .eyebrow {
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .sourceLink {
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .sourceLink:hover {
-    color: rgba(255, 255, 255, 0.65);
-  }
-
-  .beginner {
-    background: rgba(21, 128, 61, 0.2);
-    color: #4ade80;
-  }
-
-  .beginnerIntermediate {
-    background: rgba(4, 120, 87, 0.2);
-    color: #34d399;
-  }
-
-  .intermediate {
-    background: rgba(180, 83, 9, 0.2);
-    color: #fbbf24;
-  }
-
-  .advanced {
-    background: rgba(185, 28, 28, 0.2);
-    color: #f87171;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .title {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .mobileItem {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .mobileIndex {
-    color: rgba(255, 255, 255, 0.35);
-  }
-
-  .mobileTitle {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .mobileSubline {
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  .mobileDescription {
-    color: rgba(255, 255, 255, 0.65);
-  }
-
-  .mobileMeta {
-    color: rgba(255, 255, 255, 0.45);
-  }
 }
 
 @media (max-width: 700px) {
