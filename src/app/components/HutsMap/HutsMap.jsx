@@ -120,6 +120,91 @@ export default function HutsMap() {
   const [mapInteractive, setMapInteractive] = useState(false);
   const searchRef = useRef(null);
   const ignoreNextMapClick = useRef(false);
+  const isMobileRef = useRef(false);
+  const mapInteractiveRef = useRef(false);
+  isMobileRef.current = isMobile;
+  mapInteractiveRef.current = mapInteractive;
+
+  const syncMapGestures = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const locked = isMobileRef.current && !mapInteractiveRef.current;
+    const handlers = [
+      map.dragPan,
+      map.scrollZoom,
+      map.boxZoom,
+      map.dragRotate,
+      map.keyboard,
+      map.doubleClickZoom,
+      map.touchZoomRotate,
+      map.touchPitch,
+    ];
+    for (const handler of handlers) {
+      if (locked) handler.disable();
+      else handler.enable();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Touch phones/tablets need the lock; desktop mouse/trackpad should always pan freely.
+    const mq = window.matchMedia("(max-width: 767px) and (hover: none)");
+    const sync = () => {
+      const mobile = mq.matches;
+      setIsMobile(mobile);
+      if (!mobile) setMapInteractive(false);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    syncMapGestures();
+  }, [isMobile, mapInteractive, syncMapGestures]);
+
+  // While moving the map, stop the page from scrolling or pinch-zooming underneath.
+  useEffect(() => {
+    if (!isMobile || !mapInteractive) return;
+
+    const { body, documentElement } = document;
+    const scrollY = window.scrollY;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      bodyTouchAction: body.style.touchAction,
+      htmlTouchAction: documentElement.style.touchAction,
+      overscrollBehavior: body.style.overscrollBehavior,
+    };
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    body.style.touchAction = "none";
+    body.style.overscrollBehavior = "none";
+    documentElement.style.touchAction = "none";
+
+    const preventPageGesture = (e) => {
+      if (e.cancelable) e.preventDefault();
+    };
+    document.addEventListener("touchmove", preventPageGesture, { passive: false });
+    document.addEventListener("gesturestart", preventPageGesture, { passive: false });
+
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      body.style.touchAction = prev.bodyTouchAction;
+      body.style.overscrollBehavior = prev.overscrollBehavior;
+      documentElement.style.touchAction = prev.htmlTouchAction;
+      document.removeEventListener("touchmove", preventPageGesture);
+      document.removeEventListener("gesturestart", preventPageGesture);
+      window.scrollTo(0, scrollY);
+    };
+  }, [isMobile, mapInteractive]);
 
   const defaultFrom = new Date(
     new Date().getFullYear(),
@@ -320,26 +405,12 @@ export default function HutsMap() {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    const mobile = window.innerWidth < 768;
-    setIsMobile(mobile);
-
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: MAP_STYLES.minimal,
       center: [13.4, 47.2],
       zoom: 6,
     });
-
-    if (mobile) {
-      map.dragPan.disable();
-      map.scrollZoom.disable();
-      map.boxZoom.disable();
-      map.dragRotate.disable();
-      map.keyboard.disable();
-      map.doubleClickZoom.disable();
-      map.touchZoomRotate.disable();
-      map.touchPitch.disable();
-    }
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
@@ -363,37 +434,14 @@ export default function HutsMap() {
     });
 
     mapRef.current = map;
+    syncMapGestures();
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       map.remove();
       mapRef.current = null;
+      mapLoadedRef.current = false;
     };
-  }, [addEdgeLayer]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !isMobile) return;
-
-    if (mapInteractive) {
-      map.dragPan.enable();
-      map.scrollZoom.enable();
-      map.boxZoom.enable();
-      map.dragRotate.enable();
-      map.keyboard.enable();
-      map.doubleClickZoom.enable();
-      map.touchZoomRotate.enable();
-      map.touchPitch.enable();
-    } else {
-      map.dragPan.disable();
-      map.scrollZoom.disable();
-      map.boxZoom.disable();
-      map.dragRotate.disable();
-      map.keyboard.disable();
-      map.doubleClickZoom.disable();
-      map.touchZoomRotate.disable();
-      map.touchPitch.disable();
-    }
-  }, [mapInteractive, isMobile]);
+  }, [addEdgeLayer, syncMapGestures]);
 
   // Close search dropdown on outside click
   useEffect(() => {
@@ -754,8 +802,11 @@ export default function HutsMap() {
           position: "relative",
           width: "100%",
           height: isMobile ? "min(500px, calc(100dvh - 260px))" : "calc(100dvh - 320px)",
-          border: mapInteractive ? "1px solid #0070f3" : "1px solid #ddd",
-          boxShadow: mapInteractive ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : undefined,
+          border: isMobile && mapInteractive ? "1px solid #0070f3" : "1px solid #ddd",
+          boxShadow:
+            isMobile && mapInteractive
+              ? "0 0 0 2px rgba(0, 112, 243, 0.2)"
+              : undefined,
         }}
       >
         <div
@@ -763,8 +814,8 @@ export default function HutsMap() {
           style={{
             width: "100%",
             height: "100%",
-            // Locked: allow page scroll over the map. Unlocked: keep gestures on the map.
-            touchAction: isMobile && !mapInteractive ? "pan-y" : "none",
+            // Only override touch scrolling on real mobile when the map is locked.
+            touchAction: isMobile ? (mapInteractive ? "none" : "pan-y") : "auto",
           }}
         />
 
