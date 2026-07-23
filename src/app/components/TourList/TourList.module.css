@@ -25,6 +25,7 @@
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .sourceLink {
@@ -351,6 +352,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  .title {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
   .mobileItem {
     border-bottom-color: rgba(255, 255, 255, 0.1);
   }

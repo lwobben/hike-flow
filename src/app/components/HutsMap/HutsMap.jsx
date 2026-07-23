@@ -319,11 +319,16 @@ export default function HutsMap() {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    const mobile = window.innerWidth < 768;
+    setIsMobile(mobile);
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: MAP_STYLES.minimal,
       center: [13.4, 47.2],
       zoom: 6,
+      // Let one-finger page scroll work on mobile; map needs two fingers to pan/zoom.
+      cooperativeGestures: mobile,
     });
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -354,10 +359,6 @@ export default function HutsMap() {
       mapRef.current = null;
     };
   }, [addEdgeLayer]);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
 
   // Close search dropdown on outside click
   useEffect(() => {
