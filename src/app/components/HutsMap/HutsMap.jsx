@@ -162,19 +162,17 @@ export default function HutsMap() {
     syncMapGestures();
   }, [isMobile, mapInteractive, syncMapGestures]);
 
-  // While moving the map, stop the page from scrolling or pinch-zooming underneath.
+  // While moving the map, lock page scroll without blocking map pinch-zoom.
   useEffect(() => {
     if (!isMobile || !mapInteractive) return;
 
-    const { body, documentElement } = document;
+    const { body } = document;
     const scrollY = window.scrollY;
     const prev = {
       position: body.style.position,
       top: body.style.top,
       width: body.style.width,
       overflow: body.style.overflow,
-      bodyTouchAction: body.style.touchAction,
-      htmlTouchAction: documentElement.style.touchAction,
       overscrollBehavior: body.style.overscrollBehavior,
     };
 
@@ -182,26 +180,14 @@ export default function HutsMap() {
     body.style.top = `-${scrollY}px`;
     body.style.width = "100%";
     body.style.overflow = "hidden";
-    body.style.touchAction = "none";
     body.style.overscrollBehavior = "none";
-    documentElement.style.touchAction = "none";
-
-    const preventPageGesture = (e) => {
-      if (e.cancelable) e.preventDefault();
-    };
-    document.addEventListener("touchmove", preventPageGesture, { passive: false });
-    document.addEventListener("gesturestart", preventPageGesture, { passive: false });
 
     return () => {
       body.style.position = prev.position;
       body.style.top = prev.top;
       body.style.width = prev.width;
       body.style.overflow = prev.overflow;
-      body.style.touchAction = prev.bodyTouchAction;
       body.style.overscrollBehavior = prev.overscrollBehavior;
-      documentElement.style.touchAction = prev.htmlTouchAction;
-      document.removeEventListener("touchmove", preventPageGesture);
-      document.removeEventListener("gesturestart", preventPageGesture);
       window.scrollTo(0, scrollY);
     };
   }, [isMobile, mapInteractive]);
@@ -814,8 +800,8 @@ export default function HutsMap() {
           style={{
             width: "100%",
             height: "100%",
-            // Only override touch scrolling on real mobile when the map is locked.
-            touchAction: isMobile ? (mapInteractive ? "none" : "pan-y") : "auto",
+            // Give MapLibre full control of one- and two-finger gestures in move mode.
+            touchAction: isMobile && mapInteractive ? "none" : "auto",
           }}
         />
 
