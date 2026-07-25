@@ -17,6 +17,9 @@ export const metadata = {
   metadataBase: new URL("https://hut2hut.app"),
   title: "Plan your Hut2Hut tour!",
   description: "Plan your Hut2Hut tour",
+  verification: {
+    google: "dRk6k23zSAaI4OybS_2h7IF7IrxR8I3xxj-pfWb8VKE",
+  },
 };
 
 export const viewport = {
