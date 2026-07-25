@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://hut2hut.app"),
   title: "Plan your Hut2Hut tour!",
   description: "Plan your Hut2Hut tour",
 };
