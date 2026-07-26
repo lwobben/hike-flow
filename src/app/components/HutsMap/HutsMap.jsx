@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Switch } from "@/components/ui/switch";
 import HutPopup from "./HutPopup";
 import PlanTourModal from "./PlanTourModal";
 import DateRangePicker from "./DateRangePicker";
+import { MAP_TOURS, MAP_TOURS_BY_ID } from "./tourHuts";
 const PALETTE = [
   "#e6194b",
   "#3cb44b",
@@ -115,6 +122,15 @@ export default function HutsMap() {
   const [bedsNeeded, setBedsNeeded] = useState(2);
   const [hutSearch, setHutSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [selectedTours, setSelectedTours] = useState([]);
+  const MAX_SELECTED_FILTERS = 5;
+  const selectedGroupsRef = useRef([]);
+  const selectedToursRef = useRef([]);
+  selectedGroupsRef.current = selectedGroups;
+  selectedToursRef.current = selectedTours;
+  const selectedFilterCount = selectedGroups.length + selectedTours.length;
+  const filtersAtMax = selectedFilterCount >= MAX_SELECTED_FILTERS;
   const [isMobile, setIsMobile] = useState(false);
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [mapInteractive, setMapInteractive] = useState(false);
@@ -206,6 +222,113 @@ export default function HutsMap() {
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const [dateFrom, setDateFrom] = useState(toInputValue(defaultFrom));
   const [dateTo, setDateTo] = useState(toInputValue(defaultTo));
+  const mountainGroups = useMemo(
+    () =>
+      [...new Set(huts.map((h) => h.gebirgsgruppe).filter(Boolean))].sort(
+        (a, b) => a.localeCompare(b, "de"),
+      ),
+    [huts],
+  );
+
+  const collectFilterHuts = (groups, tourIds) => {
+    const tourHutIds = new Set();
+    for (const tourId of tourIds) {
+      const tour = MAP_TOURS_BY_ID[tourId];
+      if (!tour) continue;
+      for (const id of tour.officialHutIds) tourHutIds.add(id);
+      for (const id of tour.optionalHutIds) tourHutIds.add(id);
+    }
+    return hutsRef.current.filter(
+      (hut) =>
+        (groups.length > 0 && groups.includes(hut.gebirgsgruppe)) ||
+        tourHutIds.has(hut.id),
+    );
+  };
+
+  const fitMapToSelection = (groups, tourIds) => {
+    if (!mapRef.current) return;
+    if (groups.length === 0 && tourIds.length === 0) return;
+    const selectedHuts = collectFilterHuts(groups, tourIds);
+    if (selectedHuts.length === 0) return;
+
+    if (selectedHuts.length === 1) {
+      mapRef.current.easeTo({
+        center: [selectedHuts[0].lon, selectedHuts[0].lat],
+        zoom: 10,
+        duration: 700,
+      });
+      return;
+    }
+
+    const bounds = new maplibregl.LngLatBounds();
+    for (const hut of selectedHuts) bounds.extend([hut.lon, hut.lat]);
+    mapRef.current.fitBounds(bounds, {
+      padding: isMobile ? 36 : 70,
+      maxZoom: 10,
+      duration: 700,
+    });
+  };
+
+  const addMountainGroup = (group) => {
+    if (!group) return;
+    if (selectedGroups.includes(group)) return;
+    if (filtersAtMax) return;
+
+    const next = [...selectedGroups, group];
+    setSelectedGroups(next);
+    setPopup(null);
+    fitMapToSelection(next, selectedTours);
+  };
+
+  const removeMountainGroup = (group) => {
+    const next = selectedGroups.filter((g) => g !== group);
+    setSelectedGroups(next);
+    setPopup(null);
+    if (next.length > 0 || selectedTours.length > 0) {
+      fitMapToSelection(next, selectedTours);
+    }
+  };
+
+  const addTour = (tourId) => {
+    if (!tourId) return;
+    if (selectedTours.includes(tourId)) return;
+    if (filtersAtMax) return;
+
+    const next = [...selectedTours, tourId];
+    setSelectedTours(next);
+    setPopup(null);
+    fitMapToSelection(selectedGroups, next);
+  };
+
+  const removeTour = (tourId) => {
+    const next = selectedTours.filter((id) => id !== tourId);
+    setSelectedTours(next);
+    setPopup(null);
+    if (selectedGroups.length > 0 || next.length > 0) {
+      fitMapToSelection(selectedGroups, next);
+    }
+  };
+
+  const clearFilters = () => {
+    setSelectedGroups([]);
+    setSelectedTours([]);
+    setPopup(null);
+  };
+
+  const hutTourRoles = useMemo(() => {
+    const roles = new Map();
+    for (const tourId of selectedTours) {
+      const tour = MAP_TOURS_BY_ID[tourId];
+      if (!tour) continue;
+      for (const id of tour.optionalHutIds) {
+        if (!roles.has(id)) roles.set(id, "optional");
+      }
+      for (const id of tour.officialHutIds) {
+        roles.set(id, "official");
+      }
+    }
+    return roles;
+  }, [selectedTours]);
 
   useEffect(() => {
     if (!popup || popup.type !== "hut" || !popup.hutReservationId) return;
@@ -218,7 +341,13 @@ export default function HutsMap() {
     );
     const id = popup.hutReservationId;
     fetch(`/api/availability?hutId=${id}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !Array.isArray(body.availability)) {
+          throw new Error(body.error || "availability failed");
+        }
+        return body;
+      })
       .then((res) =>
         setPopup((prev) =>
           prev?.hutReservationId === id
@@ -227,7 +356,7 @@ export default function HutsMap() {
                 availability: {
                   loading: false,
                   hutUnlocked: res.hutUnlocked ?? true,
-                  data: Array.isArray(res.availability) ? res.availability : [],
+                  data: res.availability,
                 },
               }
             : prev,
@@ -243,24 +372,32 @@ export default function HutsMap() {
   }, [showAvailability]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
-  const addEdgeLayer = useCallback(() => {
-    const map = mapRef.current;
-    if (
-      !map ||
-      !mapLoadedRef.current ||
-      !graphRef.current ||
-      hutsRef.current.length === 0
-    )
-      return;
-
+  const buildEdgeFeatures = useCallback(() => {
     const edges = graphRef.current;
     const hutsById = hutsByIdRef.current;
+    if (!edges || hutsRef.current.length === 0) return [];
 
-    const features = edges
+    const groups = selectedGroupsRef.current;
+    const tours = selectedToursRef.current;
+    const tourHutIds = new Set();
+    for (const tourId of tours) {
+      const tour = MAP_TOURS_BY_ID[tourId];
+      if (!tour) continue;
+      for (const id of tour.officialHutIds) tourHutIds.add(id);
+      for (const id of tour.optionalHutIds) tourHutIds.add(id);
+    }
+    const hasFilters = groups.length > 0 || tours.length > 0;
+    const hutMatches = (hut) =>
+      !hasFilters ||
+      groups.includes(hut.gebirgsgruppe) ||
+      tourHutIds.has(hut.id);
+
+    return edges
       .map((e) => {
         const from = hutsById[e.from];
         const to = hutsById[e.to];
         if (!from || !to) return null;
+        if (!hutMatches(from) || !hutMatches(to)) return null;
         return {
           type: "Feature",
           properties: { from: e.from, to: e.to },
@@ -271,6 +408,19 @@ export default function HutsMap() {
         };
       })
       .filter(Boolean);
+  }, []);
+
+  const addEdgeLayer = useCallback(() => {
+    const map = mapRef.current;
+    if (
+      !map ||
+      !mapLoadedRef.current ||
+      !graphRef.current ||
+      hutsRef.current.length === 0
+    )
+      return;
+
+    const features = buildEdgeFeatures();
 
     if (map.getSource("edges")) {
       map.getSource("edges").setData({ type: "FeatureCollection", features });
@@ -355,7 +505,17 @@ export default function HutsMap() {
         map.getCanvas().style.cursor = "";
       });
     }
-  }, []);
+  }, [buildEdgeFeatures]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.getSource("edges")) return;
+    map.getSource("edges").setData({
+      type: "FeatureCollection",
+      features: buildEdgeFeatures(),
+    });
+    if (popup?.type === "edge") setPopup(null);
+  }, [selectedGroups, selectedTours, buildEdgeFeatures]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch huts
   useEffect(() => {
@@ -497,7 +657,13 @@ export default function HutsMap() {
     setPopup(newPopup);
     if (showAvailability && h.hutReservationId) {
       fetch(`/api/availability?hutId=${h.hutReservationId}`)
-        .then((res) => res.json())
+        .then(async (res) => {
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok || !Array.isArray(body.availability)) {
+            throw new Error(body.error || "availability failed");
+          }
+          return body;
+        })
         .then((res) =>
           setPopup((prev) =>
             prev?.hutReservationId === h.hutReservationId
@@ -506,9 +672,7 @@ export default function HutsMap() {
                   availability: {
                     loading: false,
                     hutUnlocked: res.hutUnlocked ?? true,
-                    data: Array.isArray(res.availability)
-                      ? res.availability
-                      : [],
+                    data: res.availability,
                   },
                 }
               : prev,
@@ -687,6 +851,208 @@ export default function HutsMap() {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            width: isMobile ? "100%" : "auto",
+            maxWidth: isMobile ? "100%" : 420,
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: "0.85em",
+              color: "var(--huts-ctrl-muted, #555)",
+              width: "100%",
+            }}
+          >
+            Mountain groups:
+            <select
+              value=""
+              onChange={(e) => {
+                addMountainGroup(e.target.value);
+                e.target.value = "";
+              }}
+              disabled={filtersAtMax}
+              style={{
+                minWidth: 190,
+                maxWidth: isMobile ? "100%" : 260,
+                flex: 1,
+                padding: "4px 8px",
+                border: "1px solid var(--huts-ctrl-border, #ccc)",
+                borderRadius: 4,
+                fontSize: "inherit",
+                color: "var(--huts-ctrl-text, #333)",
+                background: "#fff",
+              }}
+            >
+              <option value="">
+                {selectedGroups.length === 0 && selectedTours.length === 0
+                  ? "All mountain groups"
+                  : filtersAtMax
+                    ? `Max ${MAX_SELECTED_FILTERS} filters`
+                    : "Add mountain group…"}
+              </option>
+              {mountainGroups
+                .filter((group) => !selectedGroups.includes(group))
+                .map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: "0.85em",
+              color: "var(--huts-ctrl-muted, #555)",
+              width: "100%",
+            }}
+          >
+            Tours:
+            <select
+              value=""
+              onChange={(e) => {
+                addTour(e.target.value);
+                e.target.value = "";
+              }}
+              disabled={filtersAtMax}
+              style={{
+                minWidth: 190,
+                maxWidth: isMobile ? "100%" : 260,
+                flex: 1,
+                padding: "4px 8px",
+                border: "1px solid var(--huts-ctrl-border, #ccc)",
+                borderRadius: 4,
+                fontSize: "inherit",
+                color: "var(--huts-ctrl-text, #333)",
+                background: "#fff",
+              }}
+            >
+              <option value="">
+                {selectedTours.length === 0 && selectedGroups.length === 0
+                  ? "All tours"
+                  : filtersAtMax
+                    ? `Max ${MAX_SELECTED_FILTERS} filters`
+                    : "Add tour…"}
+              </option>
+              {MAP_TOURS.filter((tour) => !selectedTours.includes(tour.id)).map(
+                (tour) => (
+                  <option key={tour.id} value={tour.id}>
+                    {tour.title}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+          {(selectedGroups.length > 0 || selectedTours.length > 0) && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+                alignItems: "center",
+              }}
+            >
+              {selectedGroups.map((group) => (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => removeMountainGroup(group)}
+                  title={`Remove ${group}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "3px 8px",
+                    border: "1px solid var(--huts-ctrl-border, #ccc)",
+                    borderRadius: 4,
+                    background: "#fff",
+                    color: "var(--huts-ctrl-text, #333)",
+                    fontSize: "0.8em",
+                    cursor: "pointer",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: groupColorMap.current[group] ?? "#888",
+                      flexShrink: 0,
+                    }}
+                  />
+                  {group}
+                  <span aria-hidden style={{ opacity: 0.55 }}>
+                    ×
+                  </span>
+                </button>
+              ))}
+              {selectedTours.map((tourId) => {
+                const tour = MAP_TOURS_BY_ID[tourId];
+                return (
+                  <button
+                    key={tourId}
+                    type="button"
+                    onClick={() => removeTour(tourId)}
+                    title={`Remove ${tour?.title ?? tourId}`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "3px 8px",
+                      border: "1px solid #7a9bb8",
+                      borderRadius: 4,
+                      background: "#f3f7fb",
+                      color: "var(--huts-ctrl-text, #333)",
+                      fontSize: "0.8em",
+                      cursor: "pointer",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 2,
+                        background: "#3d6f99",
+                        flexShrink: 0,
+                      }}
+                    />
+                    {tour?.title ?? tourId}
+                    <span aria-hidden style={{ opacity: 0.55 }}>
+                      ×
+                    </span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={{
+                  border: "none",
+                  background: "none",
+                  color: "var(--huts-ctrl-muted, #555)",
+                  fontSize: "0.8em",
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                  textDecoration: "underline",
+                }}
+              >
+                Clear
+              </button>
+            </div>
           )}
         </div>
 
@@ -892,6 +1258,25 @@ export default function HutsMap() {
           {mapRef.current &&
             huts.map((h, i) => {
               const { x, y } = mapRef.current.project([h.lon, h.lat]);
+              const hasFilters =
+                selectedGroups.length > 0 || selectedTours.length > 0;
+              const matchesGroup =
+                selectedGroups.length > 0 &&
+                selectedGroups.includes(h.gebirgsgruppe);
+              const tourRole = hutTourRoles.get(h.id) ?? null;
+              const matchesTour = tourRole != null;
+              const isSelected =
+                !hasFilters || matchesGroup || matchesTour;
+              const isOfficial = tourRole === "official";
+              const isOptional = tourRole === "optional";
+              const dimOptional = isOptional && !matchesGroup;
+              const inPlan = tourSelectedHuts.find((s) => s.id === h.id);
+
+              let outline;
+              if (inPlan) outline = "3px solid #0070f3";
+              else if (isOfficial) outline = "2px solid rgba(20,20,20,0.55)";
+              else if (isOptional) outline = "2px dashed #b8860b";
+
               return (
                 <div
                   key={i}
@@ -906,23 +1291,31 @@ export default function HutsMap() {
                     }
                     openHutPopup(h);
                   }}
+                  title={
+                    isOfficial
+                      ? `${h.name} (official tour hut)`
+                      : isOptional
+                        ? `${h.name} (optional tour hut)`
+                        : h.name
+                  }
                   style={{
                     position: "absolute",
-                    left: x - 8,
-                    top: y - 8,
-                    width: 16,
-                    height: 16,
+                    left: x - (dimOptional ? 6 : 8),
+                    top: y - (dimOptional ? 6 : 8),
+                    width: dimOptional ? 12 : 16,
+                    height: dimOptional ? 12 : 16,
                     borderRadius: h.hutReservationId ? "0" : "50%",
                     transform: h.hutReservationId ? "rotate(45deg)" : undefined,
                     background:
                       groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
                     border: "2px solid #fff",
-                    outline: tourSelectedHuts.find((s) => s.id === h.id)
-                      ? "3px solid #0070f3"
-                      : undefined,
+                    outline,
                     outlineOffset: "2px",
                     cursor: "pointer",
                     pointerEvents: "auto",
+                    opacity: !isSelected ? 0.12 : dimOptional ? 0.55 : 1,
+                    zIndex: isSelected ? (isOfficial ? 3 : 2) : 1,
+                    transition: "opacity 180ms ease",
                   }}
                 />
               );
@@ -945,6 +1338,7 @@ export default function HutsMap() {
           marginTop: 8,
           fontSize: "0.85em",
           color: "var(--huts-ctrl-text, #444)",
+          flexWrap: "wrap",
         }}
       >
         <div
@@ -983,6 +1377,47 @@ export default function HutsMap() {
           />
           Book directly with the hut
         </div>
+        {selectedTours.length > 0 && (
+          <>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+              title="Core overnight huts on the selected tour(s)"
+            >
+              <div
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  background: "#888",
+                  border: "2px solid #fff",
+                  outline: "2px solid rgba(20,20,20,0.55)",
+                  outlineOffset: 1,
+                  flexShrink: 0,
+                }}
+              />
+              Official tour hut
+            </div>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+              title="Variant, lunch stop, or nearby extension on the selected tour(s)"
+            >
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: "#888",
+                  border: "2px solid #fff",
+                  outline: "2px dashed #b8860b",
+                  outlineOffset: 1,
+                  opacity: 0.55,
+                  flexShrink: 0,
+                }}
+              />
+              Optional tour hut
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

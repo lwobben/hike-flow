@@ -138,14 +138,20 @@ export default function PlanTourModal({
       if (fetched.has(h.id)) continue;
       fetched.add(h.id);
       fetch(`/api/availability?hutId=${h.hutReservationId}`)
-        .then((r) => r.json())
+        .then(async (r) => {
+          const res = await r.json().catch(() => ({}));
+          if (!r.ok || !Array.isArray(res.availability)) {
+            throw new Error(res.error || "availability failed");
+          }
+          return res;
+        })
         .then((res) =>
           setAvailability((prev) => ({
             ...prev,
             [h.id]: {
               loading: false,
               hutUnlocked: res.hutUnlocked ?? true,
-              data: Array.isArray(res.availability) ? res.availability : [],
+              data: res.availability,
             },
           }))
         )

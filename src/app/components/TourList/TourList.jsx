@@ -81,19 +81,6 @@ const TOURS = [
     url: `${TR}${OPPAD_BASE}/huttentocht-venediger-lasoring-hohenweg-hohe-tauern`,
   },
   {
-    id: "salzburger",
-    title: "Gasteinertal stages of Salzburger Almenweg",
-    description:
-      "Gentle route linking traditional alpine pasture huts, ideal for first-timers",
-    area: "Pongau, Salzburg region",
-    start: "Dorfgastein",
-    end: "Sportgastein",
-    days: "6",
-    heaviness: "Light–Medium",
-    level: "Beginner–Intermediate",
-    url: `${TR}${OPPAD_BASE}/huttentocht-salzburger-almenweg`,
-  },
-  {
     id: "ratikon",
     title: "Rätikon tour",
     description:
@@ -158,20 +145,6 @@ const TOURS = [
     level: "Beginner–Intermediate",
     url: MAIN_URL,
     paragraph: 11,
-  },
-  {
-    id: "adlerweg",
-    title: "7-day part of Adlerweg",
-    description:
-      "Austria's premier long-distance route crossing the full breadth of the Tyrolean Alps",
-    area: "Northern Limestone Alps, Tyrol",
-    start: "St. Johann in Tirol",
-    end: "St. Anton am Arlberg",
-    days: "7",
-    heaviness: "Heavy",
-    level: "Advanced",
-    url: MAIN_URL,
-    paragraph: 12,
   },
 ];
 
