@@ -14,25 +14,79 @@ import HutPopup from "./HutPopup";
 import PlanTourModal from "./PlanTourModal";
 import DateRangePicker from "./DateRangePicker";
 import { MAP_TOURS, MAP_TOURS_BY_ID } from "./tourHuts";
+
+const MAX_SELECTED_FILTERS = 3;
+const AVAIL_FETCH_CONCURRENCY = 4;
+/** Refresh hut availability after this long so map greying stays roughly current. */
+const AVAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function fetchHutAvailability(hutReservationId) {
+  return fetch(`/api/availability?hutId=${hutReservationId}`).then(
+    async (res) => {
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !Array.isArray(body.availability)) {
+        throw new Error(body.error || "availability failed");
+      }
+      return {
+        hutUnlocked: body.hutUnlocked ?? true,
+        data: body.availability,
+      };
+    },
+  );
+}
+
+function getAvailCache(cache, key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.fetchedAt > AVAIL_CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+function setAvailCache(cache, key, value) {
+  cache.set(key, { ...value, fetchedAt: Date.now() });
+}
+
+function nightHasEnoughBeds(entry, bedsNeeded) {
+  if (!entry) return false;
+  if (String(entry.percentage || "").toUpperCase() === "FULL") return false;
+  if (entry.freeBeds == null || entry.freeBeds === "") return false;
+  const beds = Number(entry.freeBeds);
+  return Number.isFinite(beds) && beds >= bedsNeeded;
+}
+
+function hutHasBedsInRange(avail, dateFrom, dateTo, bedsNeeded) {
+  if (!avail || avail.error) return null;
+  if (avail.hutUnlocked === false) return false;
+  return (avail.data ?? []).some((entry) => {
+    const day = String(entry.date).slice(0, 10);
+    return (
+      day >= dateFrom && day <= dateTo && nightHasEnoughBeds(entry, bedsNeeded)
+    );
+  });
+}
+
 const PALETTE = [
   "#e6194b",
   "#3cb44b",
-  "#4363d8",
+  "#5b8def", // mid blue
   "#f58231",
-  "#911eb4",
+  "#c44dd6",
   "#42d4f4",
   "#f032e6",
   "#bfef45",
   "#fabed4",
   "#469990",
   "#dcbeff",
-  "#9a6324",
+  "#c4842d",
   "#fffac8",
-  "#800000",
+  "#d94c4c",
   "#aaffc3",
-  "#808000",
+  "#a3a329",
   "#ffd8b1",
-  "#000075",
+  "#20c5a8", // teal — was a second blue too close to #5b8def
   "#a9a9a9",
   "#e6beff",
 ];
@@ -124,13 +178,16 @@ export default function HutsMap() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [selectedTours, setSelectedTours] = useState([]);
-  const MAX_SELECTED_FILTERS = 5;
   const selectedGroupsRef = useRef([]);
   const selectedToursRef = useRef([]);
   selectedGroupsRef.current = selectedGroups;
   selectedToursRef.current = selectedTours;
   const selectedFilterCount = selectedGroups.length + selectedTours.length;
   const filtersAtMax = selectedFilterCount >= MAX_SELECTED_FILTERS;
+  const availCacheRef = useRef(new Map());
+  const [filterAvailVersion, setFilterAvailVersion] = useState(0);
+  const [filterAvailLoading, setFilterAvailLoading] = useState(false);
+  const [availCacheTick, setAvailCacheTick] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [mapInteractive, setMapInteractive] = useState(false);
@@ -330,25 +387,143 @@ export default function HutsMap() {
     return roles;
   }, [selectedTours]);
 
+  const selectedFilterHuts = useMemo(() => {
+    if (selectedGroups.length === 0 && selectedTours.length === 0) return [];
+    return collectFilterHuts(selectedGroups, selectedTours);
+  }, [selectedGroups, selectedTours, huts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const bookableFilterHuts = useMemo(
+    () => selectedFilterHuts.filter((h) => h.hutReservationId),
+    [selectedFilterHuts],
+  );
+
+  // Prefetch availability for filtered diamond huts (cached by reservation id).
+  useEffect(() => {
+    if (!showAvailability) {
+      setFilterAvailLoading(false);
+      return;
+    }
+    if (bookableFilterHuts.length === 0) {
+      setFilterAvailLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const missing = bookableFilterHuts.filter(
+      (h) =>
+        !getAvailCache(availCacheRef.current, String(h.hutReservationId)),
+    );
+
+    if (missing.length === 0) {
+      setFilterAvailLoading(false);
+      setFilterAvailVersion((v) => v + 1);
+      return;
+    }
+
+    setFilterAvailLoading(true);
+    let nextIndex = 0;
+
+    const worker = async () => {
+      while (!cancelled) {
+        const idx = nextIndex++;
+        if (idx >= missing.length) return;
+        const hut = missing[idx];
+        const key = String(hut.hutReservationId);
+        try {
+          const result = await fetchHutAvailability(hut.hutReservationId);
+          if (!cancelled) setAvailCache(availCacheRef.current, key, result);
+        } catch {
+          if (!cancelled)
+            setAvailCache(availCacheRef.current, key, { error: true });
+        }
+        if (!cancelled) setFilterAvailVersion((v) => v + 1);
+      }
+    };
+
+    Promise.all(
+      Array.from(
+        { length: Math.min(AVAIL_FETCH_CONCURRENCY, missing.length) },
+        () => worker(),
+      ),
+    ).then(() => {
+      if (!cancelled) setFilterAvailLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showAvailability, bookableFilterHuts, availCacheTick]);
+
+  // Re-check cache expiry while filters stay active (bookings change over time).
+  useEffect(() => {
+    if (!showAvailability || bookableFilterHuts.length === 0) return;
+    const id = setInterval(
+      () => setAvailCacheTick((t) => t + 1),
+      AVAIL_CACHE_TTL_MS,
+    );
+    return () => clearInterval(id);
+  }, [showAvailability, bookableFilterHuts.length]);
+
+  const soldOutFilterHutIds = useMemo(() => {
+    const ids = new Set();
+    if (!showAvailability) return ids;
+    if (bookableFilterHuts.length === 0) return ids;
+
+    for (const hut of bookableFilterHuts) {
+      const cached = getAvailCache(
+        availCacheRef.current,
+        String(hut.hutReservationId),
+      );
+      const hasBeds = hutHasBedsInRange(
+        cached,
+        dateFrom,
+        dateTo,
+        bedsNeeded,
+      );
+      if (hasBeds === false) ids.add(hut.id);
+    }
+    return ids;
+  }, [
+    showAvailability,
+    bookableFilterHuts,
+    dateFrom,
+    dateTo,
+    bedsNeeded,
+    filterAvailVersion,
+    availCacheTick,
+  ]);
+
   useEffect(() => {
     if (!popup || popup.type !== "hut" || !popup.hutReservationId) return;
     if (!showAvailability) {
       setPopup((prev) => (prev ? { ...prev, availability: null } : prev));
       return;
     }
+    const id = popup.hutReservationId;
+    const key = String(id);
+    const cached = getAvailCache(availCacheRef.current, key);
+    if (cached && !cached.error) {
+      setPopup((prev) =>
+        prev?.hutReservationId === id
+          ? {
+              ...prev,
+              availability: {
+                loading: false,
+                hutUnlocked: cached.hutUnlocked ?? true,
+                data: cached.data,
+              },
+            }
+          : prev,
+      );
+      return;
+    }
     setPopup((prev) =>
       prev ? { ...prev, availability: { loading: true } } : prev,
     );
-    const id = popup.hutReservationId;
-    fetch(`/api/availability?hutId=${id}`)
-      .then(async (res) => {
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok || !Array.isArray(body.availability)) {
-          throw new Error(body.error || "availability failed");
-        }
-        return body;
-      })
-      .then((res) =>
+    fetchHutAvailability(id)
+      .then((res) => {
+        setAvailCache(availCacheRef.current, key, res);
+        setFilterAvailVersion((v) => v + 1);
         setPopup((prev) =>
           prev?.hutReservationId === id
             ? {
@@ -356,19 +531,20 @@ export default function HutsMap() {
                 availability: {
                   loading: false,
                   hutUnlocked: res.hutUnlocked ?? true,
-                  data: res.availability,
+                  data: res.data,
                 },
               }
             : prev,
-        ),
-      )
-      .catch(() =>
+        );
+      })
+      .catch(() => {
+        setAvailCache(availCacheRef.current, key, { error: true });
         setPopup((prev) =>
           prev?.hutReservationId === id
             ? { ...prev, availability: { loading: false, error: true } }
             : prev,
-        ),
-      );
+        );
+      });
   }, [showAvailability]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
@@ -633,6 +809,13 @@ export default function HutsMap() {
         return a.minutes - b.minutes;
       return a.minutes !== null ? -1 : 1;
     });
+    const cached =
+      showAvailability && h.hutReservationId
+        ? getAvailCache(
+            availCacheRef.current,
+            String(h.hutReservationId),
+          )
+        : null;
     const newPopup = {
       type: "hut",
       name: h.name,
@@ -652,19 +835,23 @@ export default function HutsMap() {
       lon: h.lon,
       lat: h.lat,
       availability:
-        showAvailability && h.hutReservationId ? { loading: true } : null,
+        showAvailability && h.hutReservationId
+          ? cached && !cached.error
+            ? {
+                loading: false,
+                hutUnlocked: cached.hutUnlocked ?? true,
+                data: cached.data,
+              }
+            : { loading: true }
+          : null,
     };
     setPopup(newPopup);
-    if (showAvailability && h.hutReservationId) {
-      fetch(`/api/availability?hutId=${h.hutReservationId}`)
-        .then(async (res) => {
-          const body = await res.json().catch(() => ({}));
-          if (!res.ok || !Array.isArray(body.availability)) {
-            throw new Error(body.error || "availability failed");
-          }
-          return body;
-        })
-        .then((res) =>
+    if (showAvailability && h.hutReservationId && (!cached || cached.error)) {
+      const key = String(h.hutReservationId);
+      fetchHutAvailability(h.hutReservationId)
+        .then((res) => {
+          setAvailCache(availCacheRef.current, key, res);
+          setFilterAvailVersion((v) => v + 1);
           setPopup((prev) =>
             prev?.hutReservationId === h.hutReservationId
               ? {
@@ -672,19 +859,20 @@ export default function HutsMap() {
                   availability: {
                     loading: false,
                     hutUnlocked: res.hutUnlocked ?? true,
-                    data: res.availability,
+                    data: res.data,
                   },
                 }
               : prev,
-          ),
-        )
-        .catch(() =>
+          );
+        })
+        .catch(() => {
+          setAvailCache(availCacheRef.current, key, { error: true });
           setPopup((prev) =>
             prev?.hutReservationId === h.hutReservationId
               ? { ...prev, availability: { loading: false, error: true } }
               : prev,
-          ),
-        );
+          );
+        });
     }
   }
 
@@ -1052,6 +1240,16 @@ export default function HutsMap() {
               >
                 Clear
               </button>
+              {filterAvailLoading && showAvailability && (
+                <span
+                  style={{
+                    fontSize: "0.78em",
+                    color: "var(--huts-ctrl-muted, #555)",
+                  }}
+                >
+                  Checking availability…
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -1271,11 +1469,14 @@ export default function HutsMap() {
               const isOptional = tourRole === "optional";
               const dimOptional = isOptional && !matchesGroup;
               const inPlan = tourSelectedHuts.find((s) => s.id === h.id);
+              const isSoldOut = soldOutFilterHutIds.has(h.id);
 
               let outline;
               if (inPlan) outline = "3px solid #0070f3";
-              else if (isOfficial) outline = "2px solid rgba(20,20,20,0.55)";
-              else if (isOptional) outline = "2px dashed #b8860b";
+              else if (isOfficial && !isSoldOut)
+                outline = "2px solid rgba(20,20,20,0.55)";
+              else if (isOptional && !isSoldOut)
+                outline = "2px dashed #c4c4c4";
 
               return (
                 <div
@@ -1292,11 +1493,13 @@ export default function HutsMap() {
                     openHutPopup(h);
                   }}
                   title={
-                    isOfficial
-                      ? `${h.name} (official tour hut)`
-                      : isOptional
-                        ? `${h.name} (optional tour hut)`
-                        : h.name
+                    isSoldOut
+                      ? `${h.name} (no ${bedsNeeded}+ bed night in date range)`
+                      : isOfficial
+                        ? `${h.name} (official tour hut)`
+                        : isOptional
+                          ? `${h.name} (optional tour hut)`
+                          : h.name
                   }
                   style={{
                     position: "absolute",
@@ -1306,8 +1509,9 @@ export default function HutsMap() {
                     height: dimOptional ? 12 : 16,
                     borderRadius: h.hutReservationId ? "0" : "50%",
                     transform: h.hutReservationId ? "rotate(45deg)" : undefined,
-                    background:
-                      groupColorMap.current[h.gebirgsgruppe] ?? "#aaa",
+                    background: isSoldOut
+                      ? "#111"
+                      : (groupColorMap.current[h.gebirgsgruppe] ?? "#aaa"),
                     border: "2px solid #fff",
                     outline,
                     outlineOffset: "2px",
@@ -1315,7 +1519,7 @@ export default function HutsMap() {
                     pointerEvents: "auto",
                     opacity: !isSelected ? 0.12 : dimOptional ? 0.55 : 1,
                     zIndex: isSelected ? (isOfficial ? 3 : 2) : 1,
-                    transition: "opacity 180ms ease",
+                    transition: "opacity 180ms ease, background 180ms ease",
                   }}
                 />
               );
@@ -1408,7 +1612,7 @@ export default function HutsMap() {
                   borderRadius: "50%",
                   background: "#888",
                   border: "2px solid #fff",
-                  outline: "2px dashed #b8860b",
+                  outline: "2px dashed #c4c4c4",
                   outlineOffset: 1,
                   opacity: 0.55,
                   flexShrink: 0,
@@ -1417,6 +1621,25 @@ export default function HutsMap() {
               Optional tour hut
             </div>
           </>
+        )}
+        {soldOutFilterHutIds.size > 0 && (
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+            title={`No night in the selected date range has ${bedsNeeded}+ free beds`}
+          >
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                background: "#111",
+                border: "2px solid #fff",
+                outline: "1px solid #888",
+                transform: "rotate(45deg)",
+                flexShrink: 0,
+              }}
+            />
+            No free night in date range
+          </div>
         )}
       </div>
     </div>

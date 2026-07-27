@@ -15,8 +15,24 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   metadataBase: new URL("https://hut2hut.app"),
-  title: "Plan your Hut2Hut tour!",
-  description: "Plan your Hut2Hut tour",
+  title: "Hut2Hut – Plan hut-to-hut hiking tours in the Austrian Alps",
+  description:
+    "Plan hut-to-hut hiking tours in the Austrian Alps. Explore routes on an interactive map, check hut availability, and book mountain huts in one place.",
+  openGraph: {
+    title: "Hut2Hut – Plan hut-to-hut hiking tours in the Austrian Alps",
+    description:
+      "Plan hut-to-hut hiking tours in the Austrian Alps. Explore routes on an interactive map, check hut availability, and book mountain huts in one place.",
+    url: "https://hut2hut.app",
+    siteName: "Hut2Hut",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hut2Hut – Plan hut-to-hut hiking tours in the Austrian Alps",
+    description:
+      "Plan hut-to-hut hiking tours in the Austrian Alps. Explore routes on an interactive map, check hut availability, and book mountain huts in one place.",
+  },
   verification: {
     google: "dRk6k23zSAaI4OybS_2h7IF7IrxR8I3xxj-pfWb8VKE",
   },

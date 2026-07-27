@@ -416,7 +416,10 @@ export default function HutPopup({
               ) : (
                 <>
                   {popup.availability.data
-                    .filter((e) => e.date >= dateFrom && e.date <= dateTo)
+                    .filter((e) => {
+                      const day = String(e.date).slice(0, 10);
+                      return day >= dateFrom && day <= dateTo;
+                    })
                     .map((e) => (
                       <div
                         key={e.date}
