@@ -71,7 +71,9 @@ export default function HutPopup({
               {popup.bundesland ? ` (${popup.bundesland})` : ""}
             </div>
           )}
-          {(popup.link || popup.websites?.length > 0) && (
+          {(popup.link ||
+            popup.websites?.length > 0 ||
+            (popup.lat != null && popup.lon != null)) && (
             <div
               style={{
                 fontSize: "0.7em",
@@ -119,6 +121,16 @@ export default function HutPopup({
                 </a>
               ))}
             </div>
+          )}
+          {popup.lat != null && popup.lon != null && (
+            <a
+              href={`https://hiking.waymarkedtrails.org/#search?query=${popup.lat},%20${popup.lon}&map=15/${popup.lat}/${popup.lon}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
+            >
+              • Detailed trail map
+            </a>
           )}
           {popup.hutReservationId && (
             <a

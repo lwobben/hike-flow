@@ -92,8 +92,8 @@ const PALETTE = [
 ];
 
 const MAP_STYLES = {
-  minimal: "https://tiles.openfreemap.org/styles/positron",
   detailed: "https://tiles.openfreemap.org/styles/bright",
+  minimal: "https://tiles.openfreemap.org/styles/positron",
   terrain: {
     version: 8,
     sources: {
@@ -110,10 +110,111 @@ const MAP_STYLES = {
 };
 
 const STYLE_LABELS = {
-  minimal: "Minimal",
   detailed: "Detailed",
+  minimal: "Minimal",
   terrain: "Terrain",
 };
+
+/** Paths in OpenMapTiles usually appear around this zoom. */
+const PATHS_VISIBLE_ZOOM = 13;
+
+const NATIVE_PATH_LAYER_IDS = ["highway-path", "bridge-path", "tunnel-path"];
+const HIKE_PATH_OVERLAY_ID = "hike-paths-bold";
+const HIKE_TRACK_OVERLAY_ID = "hike-tracks-bold";
+
+const PATH_WIDTH = ["interpolate", ["linear"], ["zoom"], 13, 2.2, 15, 4, 17, 6, 20, 8];
+
+/** Instant: thicken built-in bright-style path layers (visible as soon as the style loads). */
+function restyleNativePathLayers(map) {
+  for (const id of NATIVE_PATH_LAYER_IDS) {
+    if (!map.getLayer(id)) continue;
+    try {
+      map.setPaintProperty(id, "line-color", "#b45309");
+      map.setPaintProperty(id, "line-opacity", 1);
+      map.setPaintProperty(id, "line-width", PATH_WIDTH);
+      map.setPaintProperty(id, "line-dasharray", [2, 0.5]);
+      map.setLayoutProperty(id, "line-cap", "round");
+      map.setLayoutProperty(id, "line-join", "round");
+    } catch (err) {
+      console.warn("restyle path layer failed", id, err);
+    }
+  }
+}
+
+/**
+ * Restyle native paths + add thicker overlays on Detailed.
+ * Returns true when overlays are in place; false if we should retry on idle.
+ */
+function ensureDetailedHikingPaths(map) {
+  if (!map) return false;
+  try {
+    if (!map.isStyleLoaded()) return false;
+  } catch {
+    return false;
+  }
+
+  // Native restyle is available immediately — don't wait for idle/overlay.
+  restyleNativePathLayers(map);
+
+  if (!map.getSource("openmaptiles")) return false;
+
+  for (const id of [HIKE_TRACK_OVERLAY_ID, HIKE_PATH_OVERLAY_ID]) {
+    if (map.getLayer(id)) {
+      try {
+        map.removeLayer(id);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  const beforeId = map.getLayer("edges-layer")
+    ? "edges-layer"
+    : map.getStyle()?.layers?.find((l) => l.type === "symbol")?.id;
+
+  const addOverlay = (id, className, widthStops, dash) => {
+    map.addLayer(
+      {
+        id,
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "transportation",
+        minzoom: 13,
+        filter: ["==", ["get", "class"], className],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": "#9a3412",
+          "line-opacity": 0.95,
+          "line-width": ["interpolate", ["linear"], ["zoom"], ...widthStops],
+          "line-dasharray": dash,
+        },
+      },
+      beforeId,
+    );
+  };
+
+  try {
+    addOverlay(HIKE_TRACK_OVERLAY_ID, "track", [13, 1.6, 15, 2.8, 17, 4.5], [
+      3, 1.2,
+    ]);
+    addOverlay(HIKE_PATH_OVERLAY_ID, "path", [13, 2.5, 15, 4.5, 17, 7], [
+      2, 0.45,
+    ]);
+    return true;
+  } catch (err) {
+    console.warn("hiking path overlay failed", err);
+    return false;
+  }
+}
+
+/** Apply paths now; if overlays aren't ready yet, finish them on the next idle. */
+function applyDetailedHikingPaths(map) {
+  if (ensureDetailedHikingPaths(map)) return;
+  map.once("idle", () => ensureDetailedHikingPaths(map));
+}
 
 function buildGroupColorMap(huts) {
   const colorMap = {};
@@ -167,10 +268,11 @@ export default function HutsMap() {
   const animFrameRef = useRef(null);
   const [huts, setHuts] = useState([]);
   const [, forceUpdate] = useState(0);
+  const [mapZoom, setMapZoom] = useState(6);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null);
   const [showAvailability, setShowAvailability] = useState(true);
-  const [mapStyle, setMapStyle] = useState("minimal");
+  const [mapStyle, setMapStyle] = useState("detailed");
   const [showPlanTour, setShowPlanTour] = useState(false);
   const [tourSelectedHuts, setTourSelectedHuts] = useState([]);
   const [bedsNeeded, setBedsNeeded] = useState(2);
@@ -719,7 +821,10 @@ export default function HutsMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.once("style.load", () => addEdgeLayer());
+    map.once("style.load", () => {
+      addEdgeLayer();
+      if (mapStyle === "detailed") applyDetailedHikingPaths(map);
+    });
     map.setStyle(MAP_STYLES[mapStyle]);
   }, [mapStyle]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -729,7 +834,7 @@ export default function HutsMap() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: MAP_STYLES.minimal,
+      style: MAP_STYLES.detailed,
       center: [13.4, 47.2],
       zoom: 6,
     });
@@ -743,10 +848,13 @@ export default function HutsMap() {
 
     map.on("load", () => {
       mapLoadedRef.current = true;
+      setMapZoom(map.getZoom());
       forceUpdate((t) => t + 1);
       addEdgeLayer();
+      applyDetailedHikingPaths(map);
     });
     map.on("move", () => forceUpdate((t) => t + 1));
+    map.on("zoom", () => setMapZoom(map.getZoom()));
     map.on("click", () => {
       if (ignoreNextMapClick.current) {
         ignoreNextMapClick.current = false;
@@ -1400,30 +1508,57 @@ export default function HutsMap() {
             position: "absolute",
             bottom: 8,
             left: 8,
-            display: "flex",
-            gap: 4,
             zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 4,
           }}
         >
-          {Object.keys(MAP_STYLES).map((key) => (
-            <button
-              key={key}
-              onClick={() => setMapStyle(key)}
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            {Object.keys(MAP_STYLES).map((key) => (
+              <button
+                key={key}
+                onClick={() => setMapStyle(key)}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "0.78em",
+                  borderRadius: 4,
+                  border: "1px solid #aaa",
+                  background:
+                    mapStyle === key ? "#0070f3" : "rgba(255,255,255,0.9)",
+                  color: mapStyle === key ? "#fff" : "#333",
+                  cursor: "pointer",
+                  fontWeight: mapStyle === key ? 600 : 400,
+                }}
+              >
+                {STYLE_LABELS[key]}
+              </button>
+            ))}
+          </div>
+          {mapStyle === "detailed" && mapZoom < PATHS_VISIBLE_ZOOM && (
+            <div
               style={{
-                padding: "4px 10px",
-                fontSize: "0.78em",
+                padding: "3px 8px",
                 borderRadius: 4,
-                border: "1px solid #aaa",
-                background:
-                  mapStyle === key ? "#0070f3" : "rgba(255,255,255,0.9)",
-                color: mapStyle === key ? "#fff" : "#333",
-                cursor: "pointer",
-                fontWeight: mapStyle === key ? 600 : 400,
+                background: "rgba(255,255,255,0.92)",
+                border: "1px solid #ddd",
+                fontSize: "0.72em",
+                color: "#555",
+                lineHeight: 1.35,
+                maxWidth: 220,
               }}
             >
-              {STYLE_LABELS[key]}
-            </button>
-          ))}
+              Zoom in more to see hiking paths
+            </div>
+          )}
         </div>
 
         {loading && (
