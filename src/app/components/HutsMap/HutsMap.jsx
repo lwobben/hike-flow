@@ -1556,7 +1556,7 @@ export default function HutsMap() {
                 maxWidth: 220,
               }}
             >
-              Zoom in more to see hiking paths
+              Zoom in more to see all hiking paths
             </div>
           )}
         </div>
