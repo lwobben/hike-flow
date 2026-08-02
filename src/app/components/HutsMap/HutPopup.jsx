@@ -29,7 +29,6 @@ export default function HutPopup({
   popup,
   dateFrom,
   dateTo,
-  showAvailability,
   bedsNeeded = 1,
 }) {
   const [hovered, setHovered] = useState(null);
@@ -434,22 +433,20 @@ export default function HutPopup({
               )}
             </div>
           )}
-          {showAvailability && (
-            <div
-              style={{
-                fontSize: "0.7em",
-                fontWeight: "bold",
-                color: "#999",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginTop: 14,
-                marginBottom: 4,
-              }}
-            >
-              Availability
-            </div>
-          )}
-          {showAvailability && !popup.hutReservationId && (
+          <div
+            style={{
+              fontSize: "0.7em",
+              fontWeight: "bold",
+              color: "#999",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              marginTop: 14,
+              marginBottom: 4,
+            }}
+          >
+            Availability
+          </div>
+          {!popup.hutReservationId && (
             <div style={{ color: "#999", fontSize: "0.85em" }}>
               Availability not listed online for huts shown as ●{" "}
               <i>(see legend below)</i>

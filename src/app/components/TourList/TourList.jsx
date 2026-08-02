@@ -13,13 +13,14 @@ const LEVEL_STYLE = {
   Advanced: "advanced",
 };
 
+/** Mountain ranges from MAP_TOURS hut gebirgsgruppe + bundesland. */
 const TOURS = [
   {
     id: "verwall",
     title: "Verwall tour",
     description:
       "Expansive trail network through remote alpine valleys with many route variations",
-    area: "Verwall, Vorarlberg / Tirol",
+    mountainRanges: ["Verwallgruppe (Tirol / Vorarlberg)"],
     start: "St. Anton am Arlberg",
     end: "Ischgl or Schruns",
     days: "5/6/8",
@@ -33,7 +34,7 @@ const TOURS = [
     title: "Around the Bischofsmütze",
     description:
       "Compact three-day circuit around a dramatic rock spire through meadows and rock faces",
-    area: "Dachstein, Northern Limestone Alps",
+    mountainRanges: ["Dachsteingebirge (Oberösterreich / Salzburg)"],
     start: "Filzmoos",
     end: "Filzmoos",
     days: "3",
@@ -46,7 +47,7 @@ const TOURS = [
     title: "Karwendel tour",
     description:
       "Dramatic gorges and wild limestone peaks through one of Austria's finest hiking areas",
-    area: "Karwendel, Tyrol",
+    mountainRanges: ["Karwendel (Tirol)"],
     start: "Vomp",
     end: "Vomp",
     days: "5",
@@ -59,7 +60,7 @@ const TOURS = [
     title: "Stubaier Höhenweg",
     description:
       "Nine-day circuit with over 8,600 m of total elevation gain through the Stubai Alps",
-    area: "Stubai Alps, Tyrol",
+    mountainRanges: ["Stubaier Alpen (Tirol)"],
     start: "Neustift im Stubaital",
     end: "Neustift im Stubaital",
     days: "7",
@@ -72,7 +73,10 @@ const TOURS = [
     title: "Venediger–Lasörling Höhenweg",
     description:
       "High-alpine traverse past 300+ three-thousanders in the Hohe Tauern National Park",
-    area: "Hohe Tauern National Park",
+    mountainRanges: [
+      "Venedigergruppe (Salzburg / Tirol)",
+      "Lasörlinggruppe (Tirol)",
+    ],
     start: "Matreier Tauernhaus",
     end: "Virgen",
     days: "9",
@@ -85,7 +89,7 @@ const TOURS = [
     title: "Rätikon tour",
     description:
       "Five-day trek through meadows, waterfalls and a small glacier across a tri-border region",
-    area: "Rätikon, Austria / Switzerland / Liechtenstein",
+    mountainRanges: ["Rätikon (Vorarlberg / Schweiz / Liechtenstein)"],
     start: "Brand",
     end: "Latschau",
     days: "5",
@@ -98,7 +102,10 @@ const TOURS = [
     title: "Glocknerrunde",
     description:
       "Demanding circuit around Austria's highest peak with big daily elevation gains",
-    area: "Hohe Tauern National Park",
+    mountainRanges: [
+      "Glocknergruppe (Kärnten)",
+      "Granatspitzgruppe (Tirol)",
+    ],
     start: "Bruck a.d. Glocknerstraße",
     end: "Bruck a.d. Glocknerstraße",
     days: "7",
@@ -111,7 +118,7 @@ const TOURS = [
     title: "Schladminger Tauern",
     description:
       "High-route dotted with countless lakes and waterfalls through water-rich alpine terrain",
-    area: "Niedere Tauern, Salzburg / Styria",
+    mountainRanges: ["Schladminger Tauern (Salzburg / Steiermark)"],
     start: "Schladming",
     end: "Schladming",
     days: "5",
@@ -124,7 +131,10 @@ const TOURS = [
     title: "Peter Habeler Runde",
     description:
       "Circuit through the western Zillertal from flower meadows and moraines to glacial terrain",
-    area: "Zillertal, Tyrol",
+    mountainRanges: [
+      "Zillertaler Alpen (Tirol / Italien/Südtirol)",
+      "Tuxer Alpen (Tirol)",
+    ],
     start: "Mayrhofen",
     end: "Mayrhofen",
     days: "6–7",
@@ -137,7 +147,7 @@ const TOURS = [
     title: "Tannheimer Bergen",
     description:
       "Family-friendly ridge walk above a picturesque valley with gentle 2,000 m summits",
-    area: "Tannheimer Alps, Northern Tyrol",
+    mountainRanges: ["Allgäuer Alpen (Tirol)"],
     start: "Tannheim",
     end: "Tannheim",
     days: "varies",
@@ -148,6 +158,18 @@ const TOURS = [
   },
 ];
 
+function MountainRanges({ ranges, className }) {
+  if (ranges.length === 1) {
+    return <div className={className}>{ranges[0]}</div>;
+  }
+  return (
+    <ul className={className}>
+      {ranges.map((range) => (
+        <li key={range}>{range}</li>
+      ))}
+    </ul>
+  );
+}
 const ExternalIcon = ({ size = 13 }) => (
   <svg
     width={size}
@@ -293,9 +315,19 @@ export default function TourList() {
               <span className={styles.mobileTitle}>{tour.title}</span>
               <TourSourceLink tour={tour} />
             </div>
-            <p className={styles.mobileSubline}>
-              {tour.area} · {stagesLabel(tour.days)}
-            </p>
+            {tour.mountainRanges.length === 1 ? (
+              <p className={styles.mobileSubline}>
+                {tour.mountainRanges[0]} · {stagesLabel(tour.days)}
+              </p>
+            ) : (
+              <div className={styles.mobileSubline}>
+                <MountainRanges
+                  ranges={tour.mountainRanges}
+                  className={styles.mobileMountainRanges}
+                />
+                <span>{stagesLabel(tour.days)}</span>
+              </div>
+            )}
             <p className={styles.mobileDescription}>{tour.description}</p>
             <p className={styles.mobileMeta}>
               {routeEndpoints(tour)} · Effort: {tour.heaviness} · Level:{" "}
@@ -314,7 +346,7 @@ export default function TourList() {
               <th>
                 <DaysHeader />
               </th>
-              <th>Area</th>
+              <th>Mountain range</th>
               <th>Start</th>
               <th>End</th>
               <th>Effort</th>
@@ -330,7 +362,12 @@ export default function TourList() {
                 </td>
                 <td className={styles.description}>{tour.description}</td>
                 <td className={styles.days}>{tour.days}</td>
-                <td>{tour.area}</td>
+                <td>
+                  <MountainRanges
+                    ranges={tour.mountainRanges}
+                    className={styles.mountainRanges}
+                  />
+                </td>
                 <td>{tour.start}</td>
                 <td>{tour.end}</td>
                 <td>{tour.heaviness}</td>

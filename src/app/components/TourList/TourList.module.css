@@ -153,6 +153,24 @@
   line-height: 1.6;
 }
 
+.mobileMountainRanges {
+  margin: 0 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.mobileMountainRanges li {
+  position: relative;
+  padding-left: 0.9em;
+}
+
+.mobileMountainRanges li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: rgba(0, 0, 0, 0.35);
+}
+
 .mobileDescription {
   margin: 8px 0 0;
   font-size: 0.9rem;
@@ -190,6 +208,27 @@
 .days {
   white-space: nowrap;
   color: rgba(0, 0, 0, 0.6);
+}
+
+.mountainRanges {
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.6);
+  min-width: 160px;
+  line-height: 1.45;
+  list-style: none;
+}
+
+.mountainRanges li {
+  position: relative;
+  padding-left: 0.9em;
+}
+
+.mountainRanges li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: rgba(0, 0, 0, 0.35);
 }
 
 .daysHeader {

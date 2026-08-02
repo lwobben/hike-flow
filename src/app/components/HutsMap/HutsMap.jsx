@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Switch } from "@/components/ui/switch";
 import HutPopup from "./HutPopup";
 import PlanTourModal from "./PlanTourModal";
 import DateRangePicker from "./DateRangePicker";
@@ -271,7 +270,6 @@ export default function HutsMap() {
   const [mapZoom, setMapZoom] = useState(6);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null);
-  const [showAvailability, setShowAvailability] = useState(true);
   const [mapStyle, setMapStyle] = useState("detailed");
   const [showPlanTour, setShowPlanTour] = useState(false);
   const [tourSelectedHuts, setTourSelectedHuts] = useState([]);
@@ -501,10 +499,6 @@ export default function HutsMap() {
 
   // Prefetch availability for filtered diamond huts (cached by reservation id).
   useEffect(() => {
-    if (!showAvailability) {
-      setFilterAvailLoading(false);
-      return;
-    }
     if (bookableFilterHuts.length === 0) {
       setFilterAvailLoading(false);
       return;
@@ -554,21 +548,20 @@ export default function HutsMap() {
     return () => {
       cancelled = true;
     };
-  }, [showAvailability, bookableFilterHuts, availCacheTick]);
+  }, [bookableFilterHuts, availCacheTick]);
 
   // Re-check cache expiry while filters stay active (bookings change over time).
   useEffect(() => {
-    if (!showAvailability || bookableFilterHuts.length === 0) return;
+    if (bookableFilterHuts.length === 0) return;
     const id = setInterval(
       () => setAvailCacheTick((t) => t + 1),
       AVAIL_CACHE_TTL_MS,
     );
     return () => clearInterval(id);
-  }, [showAvailability, bookableFilterHuts.length]);
+  }, [bookableFilterHuts.length]);
 
   const soldOutFilterHutIds = useMemo(() => {
     const ids = new Set();
-    if (!showAvailability) return ids;
     if (bookableFilterHuts.length === 0) return ids;
 
     for (const hut of bookableFilterHuts) {
@@ -586,7 +579,6 @@ export default function HutsMap() {
     }
     return ids;
   }, [
-    showAvailability,
     bookableFilterHuts,
     dateFrom,
     dateTo,
@@ -597,10 +589,6 @@ export default function HutsMap() {
 
   useEffect(() => {
     if (!popup || popup.type !== "hut" || !popup.hutReservationId) return;
-    if (!showAvailability) {
-      setPopup((prev) => (prev ? { ...prev, availability: null } : prev));
-      return;
-    }
     const id = popup.hutReservationId;
     const key = String(id);
     const cached = getAvailCache(availCacheRef.current, key);
@@ -647,7 +635,7 @@ export default function HutsMap() {
             : prev,
         );
       });
-  }, [showAvailability]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [popup?.hutReservationId, dateFrom, dateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Called from map load, huts fetch, and graph fetch: no-ops until all three are ready
   const buildEdgeFeatures = useCallback(() => {
@@ -917,13 +905,9 @@ export default function HutsMap() {
         return a.minutes - b.minutes;
       return a.minutes !== null ? -1 : 1;
     });
-    const cached =
-      showAvailability && h.hutReservationId
-        ? getAvailCache(
-            availCacheRef.current,
-            String(h.hutReservationId),
-          )
-        : null;
+    const cached = h.hutReservationId
+      ? getAvailCache(availCacheRef.current, String(h.hutReservationId))
+      : null;
     const newPopup = {
       type: "hut",
       name: h.name,
@@ -942,19 +926,18 @@ export default function HutsMap() {
       hutReservationId: h.hutReservationId ?? null,
       lon: h.lon,
       lat: h.lat,
-      availability:
-        showAvailability && h.hutReservationId
-          ? cached && !cached.error
-            ? {
-                loading: false,
-                hutUnlocked: cached.hutUnlocked ?? true,
-                data: cached.data,
-              }
-            : { loading: true }
-          : null,
+      availability: h.hutReservationId
+        ? cached && !cached.error
+          ? {
+              loading: false,
+              hutUnlocked: cached.hutUnlocked ?? true,
+              data: cached.data,
+            }
+          : { loading: true }
+        : null,
     };
     setPopup(newPopup);
-    if (showAvailability && h.hutReservationId && (!cached || cached.error)) {
+    if (h.hutReservationId && (!cached || cached.error)) {
       const key = String(h.hutReservationId);
       fetchHutAvailability(h.hutReservationId)
         .then((res) => {
@@ -1348,7 +1331,7 @@ export default function HutsMap() {
               >
                 Clear
               </button>
-              {filterAvailLoading && showAvailability && (
+              {filterAvailLoading && (
                 <span
                   style={{
                     fontSize: "0.78em",
@@ -1362,66 +1345,50 @@ export default function HutsMap() {
           )}
         </div>
 
-        <label
+        <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            cursor: "pointer",
+            gap: 10,
           }}
         >
-          <Switch
-            checked={showAvailability}
-            onCheckedChange={setShowAvailability}
+          <DateRangePicker
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onChange={(from, to) => {
+              setDateFrom(from);
+              setDateTo(to);
+            }}
           />
-          Show availabilities
-        </label>
-        {showAvailability && (
-          <div
+          <label
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              gap: 4,
+              fontSize: "0.85em",
+              color: "var(--huts-ctrl-muted, #555)",
             }}
           >
-            <DateRangePicker
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onChange={(from, to) => {
-                setDateFrom(from);
-                setDateTo(to);
+            Beds:
+            <input
+              type="number"
+              min="1"
+              max="99"
+              value={bedsNeeded}
+              onChange={(e) =>
+                setBedsNeeded(Math.max(1, parseInt(e.target.value) || 1))
+              }
+              style={{
+                width: 48,
+                padding: "3px 5px",
+                border: "1px solid var(--huts-ctrl-border, #ccc)",
+                borderRadius: 4,
+                fontSize: "0.85em",
+                background: "#fff",
               }}
             />
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: "0.85em",
-                color: "var(--huts-ctrl-muted, #555)",
-              }}
-            >
-              Beds:
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={bedsNeeded}
-                onChange={(e) =>
-                  setBedsNeeded(Math.max(1, parseInt(e.target.value) || 1))
-                }
-                style={{
-                  width: 48,
-                  padding: "3px 5px",
-                  border: "1px solid var(--huts-ctrl-border, #ccc)",
-                  borderRadius: 4,
-                  fontSize: "0.85em",
-                  background: "#fff",
-                }}
-              />
-            </label>
-          </div>
-        )}
+          </label>
+        </div>
         <button
           onClick={() => setShowPlanTour(true)}
           style={{
@@ -1665,7 +1632,6 @@ export default function HutsMap() {
           popup={effectivePopup}
           dateFrom={dateFrom}
           dateTo={dateTo}
-          showAvailability={showAvailability}
           bedsNeeded={bedsNeeded}
         />
       </div>
