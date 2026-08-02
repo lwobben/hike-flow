@@ -52,7 +52,7 @@ export default function Home() {
             time looking forward to the mountains!
           </p>
           <p>
-            <strong>Why Austria?</strong><br />We couldn't think of a better place to start. Austria is home to one of the world's greatest mountain hut networks, with hundreds of huts linked by stunning alpine trails. Hut2Hut is continuously evolving. More countries are coming soon.
+            <strong>Why Austria?</strong><br />We couldn&apos;t think of a better place to start. Austria is home to one of the world&apos;s greatest mountain hut networks, with hundreds of huts linked by stunning alpine trails. Hut2Hut is continuously evolving. More countries are coming soon.
             </p>
         </div>
 
