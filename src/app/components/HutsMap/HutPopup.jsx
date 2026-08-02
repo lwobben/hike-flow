@@ -139,7 +139,7 @@ export default function HutPopup({
                 marginBottom: 4,
               }}
             >
-              Websites
+              Hut websites
             </div>
           )}
           {popup.link && (
@@ -161,7 +161,7 @@ export default function HutPopup({
                 marginBottom: 4,
               }}
             >
-              <span style={{ color: "#444" }}>• Other hut page(s):</span>
+              <span style={{ color: "#444" }}>• More info:</span>
               {popup.websites.map((url) => (
                 <a
                   key={url}
