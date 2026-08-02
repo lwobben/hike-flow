@@ -3,6 +3,7 @@
   margin-top: 48px;
   font-family: var(--font-geist-sans);
   font-weight: 400;
+  scroll-margin-top: 24px;
 }
 
 .heading {
@@ -26,6 +27,45 @@
   font-size: 1.15rem;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.88);
+}
+
+.tourActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.viewOnMap,
+.viewOnMapActive {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 112, 243, 0.35);
+  background: rgba(0, 112, 243, 0.06);
+  color: #005bb5;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.tourActions .viewOnMap,
+.tourActions .viewOnMapActive {
+  margin-top: 0;
+}
+
+.viewOnMap:hover {
+  background: rgba(0, 112, 243, 0.12);
+}
+
+.viewOnMapActive {
+  border-color: rgba(0, 112, 243, 0.55);
+  background: rgba(0, 112, 243, 0.14);
+  color: #004a93;
 }
 
 .sourceLink {
@@ -153,18 +193,18 @@
   line-height: 1.6;
 }
 
-.mobileMountainRanges {
+.mobileMountainGroups {
   margin: 0 0 2px;
   padding: 0;
   list-style: none;
 }
 
-.mobileMountainRanges li {
+.mobileMountainGroups li {
   position: relative;
   padding-left: 0.9em;
 }
 
-.mobileMountainRanges li::before {
+.mobileMountainGroups li::before {
   content: "•";
   position: absolute;
   left: 0;
@@ -210,7 +250,8 @@
   color: rgba(0, 0, 0, 0.6);
 }
 
-.mountainRanges {
+.mountainGroups,
+.accessPoints {
   margin: 0;
   padding: 0;
   color: rgba(0, 0, 0, 0.6);
@@ -219,12 +260,18 @@
   list-style: none;
 }
 
-.mountainRanges li {
+.accessPoints {
+  min-width: 120px;
+}
+
+.mountainGroups li,
+.accessPoints li {
   position: relative;
   padding-left: 0.9em;
 }
 
-.mountainRanges li::before {
+.mountainGroups li::before,
+.accessPoints li::before {
   content: "•";
   position: absolute;
   left: 0;

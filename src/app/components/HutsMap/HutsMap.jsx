@@ -7,12 +7,15 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { MapPin } from "lucide-react";
 import HutPopup from "./HutPopup";
 import PlanTourModal from "./PlanTourModal";
 import DateRangePicker from "./DateRangePicker";
-import { MAP_TOURS, MAP_TOURS_BY_ID } from "./tourHuts";
+import { MAP_TOURS_BY_ID } from "./tourHuts";
+import guideStyles from "./MapGuide.module.css";
 
 const MAX_SELECTED_FILTERS = 3;
 const AVAIL_FETCH_CONCURRENCY = 4;
@@ -65,6 +68,47 @@ function hutHasBedsInRange(avail, dateFrom, dateTo, bedsNeeded) {
       day >= dateFrom && day <= dateTo && nightHasEnoughBeds(entry, bedsNeeded)
     );
   });
+}
+
+/** Inclusive calendar nights from dateFrom to dateTo (YYYY-MM-DD). */
+function nightsInRange(dateFrom, dateTo) {
+  const nights = [];
+  if (!dateFrom || !dateTo || dateFrom > dateTo) return nights;
+  const cur = new Date(`${dateFrom}T00:00:00`);
+  const end = new Date(`${dateTo}T00:00:00`);
+  while (cur <= end && nights.length < 366) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, "0");
+    const d = String(cur.getDate()).padStart(2, "0");
+    nights.push(`${y}-${m}-${d}`);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return nights;
+}
+
+/**
+ * Share of nights in the date range with enough free beds.
+ * Returns null when availability is unknown / still loading.
+ */
+function hutAvailabilityRatio(avail, dateFrom, dateTo, bedsNeeded) {
+  if (!avail || avail.error) return null;
+  if (avail.hutUnlocked === false) return 0;
+  const nights = nightsInRange(dateFrom, dateTo);
+  if (nights.length === 0) return null;
+  const byDate = new Map(
+    (avail.data ?? []).map((entry) => [String(entry.date).slice(0, 10), entry]),
+  );
+  let available = 0;
+  for (const day of nights) {
+    if (nightHasEnoughBeds(byDate.get(day), bedsNeeded)) available += 1;
+  }
+  return available / nights.length;
+}
+
+/** Red (0) → yellow (0.5) → green (1). */
+function availabilityOutlineColor(ratio) {
+  const hue = Math.max(0, Math.min(1, ratio)) * 120;
+  return `hsl(${hue} 72% 40%)`;
 }
 
 const PALETTE = [
@@ -254,7 +298,50 @@ function curvedCoords(from, to) {
   return points;
 }
 
-export default function HutsMap() {
+const CIRCLE_HUT_BOOKING_TIP =
+  "For circle huts, booking is not available via the Alpenverein Hut Reservation. Check the hut's own website (see the `More info` section in the hut popup) for the preferred method of booking and checking availability, which is usually on that website, or by email or phone.";
+
+const DIAMOND_HUT_BOOKING_TIP =
+  "For diamond huts, click the `Book` link in the availability matrix or hut popup and reserve via the Alpenverein Hut Reservation.";
+
+function GuideInfoIcon({ text }) {
+  const iconRef = useRef(null);
+  const [tipPos, setTipPos] = useState(null);
+
+  const show = () => {
+    const r = iconRef.current.getBoundingClientRect();
+    setTipPos({ top: r.bottom + 8, left: r.left + r.width / 2 });
+  };
+
+  return (
+    <span className={guideStyles.infoWrap}>
+      <span
+        ref={iconRef}
+        className={guideStyles.infoIcon}
+        onMouseEnter={show}
+        onMouseLeave={() => setTipPos(null)}
+        aria-label={text}
+      >
+        i
+      </span>
+      {tipPos &&
+        createPortal(
+          <span
+            className={guideStyles.tooltip}
+            style={{ top: tipPos.top, left: tipPos.left }}
+          >
+            {text}
+          </span>,
+          document.body,
+        )}
+    </span>
+  );
+}
+
+export default function HutsMap({
+  focusedTourId = null,
+  onFocusedTourChange,
+}) {
   const containerRef = useRef(null);
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -277,13 +364,12 @@ export default function HutsMap() {
   const [hutSearch, setHutSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState([]);
-  const [selectedTours, setSelectedTours] = useState([]);
   const selectedGroupsRef = useRef([]);
-  const selectedToursRef = useRef([]);
+  const focusedTourIdRef = useRef(null);
   selectedGroupsRef.current = selectedGroups;
-  selectedToursRef.current = selectedTours;
-  const selectedFilterCount = selectedGroups.length + selectedTours.length;
-  const filtersAtMax = selectedFilterCount >= MAX_SELECTED_FILTERS;
+  focusedTourIdRef.current = focusedTourId;
+  const focusedTour = focusedTourId ? MAP_TOURS_BY_ID[focusedTourId] : null;
+  const filtersAtMax = selectedGroups.length >= MAX_SELECTED_FILTERS;
   const availCacheRef = useRef(new Map());
   const [filterAvailVersion, setFilterAvailVersion] = useState(0);
   const [filterAvailLoading, setFilterAvailLoading] = useState(false);
@@ -291,6 +377,7 @@ export default function HutsMap() {
   const [isMobile, setIsMobile] = useState(false);
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [mapInteractive, setMapInteractive] = useState(false);
+  const [hoveredPlace, setHoveredPlace] = useState(null);
   const searchRef = useRef(null);
   const ignoreNextMapClick = useRef(false);
   const isMobileRef = useRef(false);
@@ -387,14 +474,14 @@ export default function HutsMap() {
     [huts],
   );
 
-  const collectFilterHuts = (groups, tourIds) => {
-    const tourHutIds = new Set();
-    for (const tourId of tourIds) {
-      const tour = MAP_TOURS_BY_ID[tourId];
-      if (!tour) continue;
-      for (const id of tour.officialHutIds) tourHutIds.add(id);
-      for (const id of tour.optionalHutIds) tourHutIds.add(id);
-    }
+  const focusedTourHutIds = useMemo(() => {
+    if (!focusedTour) return new Set();
+    return new Set(focusedTour.officialHutIds);
+  }, [focusedTour]);
+
+  const collectFilterHuts = (groups, tourId) => {
+    const tour = tourId ? MAP_TOURS_BY_ID[tourId] : null;
+    const tourHutIds = new Set(tour?.officialHutIds ?? []);
     return hutsRef.current.filter(
       (hut) =>
         (groups.length > 0 && groups.includes(hut.gebirgsgruppe)) ||
@@ -402,15 +489,21 @@ export default function HutsMap() {
     );
   };
 
-  const fitMapToSelection = (groups, tourIds) => {
+  const fitMapToSelection = (groups, tourId) => {
     if (!mapRef.current) return;
-    if (groups.length === 0 && tourIds.length === 0) return;
-    const selectedHuts = collectFilterHuts(groups, tourIds);
-    if (selectedHuts.length === 0) return;
+    if (groups.length === 0 && !tourId) return;
+    const selectedHuts = collectFilterHuts(groups, tourId);
+    const places = tourId ? (MAP_TOURS_BY_ID[tourId]?.places ?? []) : [];
+    if (selectedHuts.length === 0 && places.length === 0) return;
 
-    if (selectedHuts.length === 1) {
+    const points = [
+      ...selectedHuts.map((h) => [h.lon, h.lat]),
+      ...places.map((p) => [p.lon, p.lat]),
+    ];
+
+    if (points.length === 1) {
       mapRef.current.easeTo({
-        center: [selectedHuts[0].lon, selectedHuts[0].lat],
+        center: points[0],
         zoom: 10,
         duration: 700,
       });
@@ -418,12 +511,16 @@ export default function HutsMap() {
     }
 
     const bounds = new maplibregl.LngLatBounds();
-    for (const hut of selectedHuts) bounds.extend([hut.lon, hut.lat]);
+    for (const pt of points) bounds.extend(pt);
     mapRef.current.fitBounds(bounds, {
       padding: isMobile ? 36 : 70,
       maxZoom: 10,
       duration: 700,
     });
+  };
+
+  const clearFocusedTour = () => {
+    onFocusedTourChange?.(null);
   };
 
   const addMountainGroup = (group) => {
@@ -433,64 +530,42 @@ export default function HutsMap() {
 
     const next = [...selectedGroups, group];
     setSelectedGroups(next);
+    clearFocusedTour();
     setPopup(null);
-    fitMapToSelection(next, selectedTours);
+    fitMapToSelection(next, null);
   };
 
   const removeMountainGroup = (group) => {
     const next = selectedGroups.filter((g) => g !== group);
     setSelectedGroups(next);
     setPopup(null);
-    if (next.length > 0 || selectedTours.length > 0) {
-      fitMapToSelection(next, selectedTours);
-    }
-  };
-
-  const addTour = (tourId) => {
-    if (!tourId) return;
-    if (selectedTours.includes(tourId)) return;
-    if (filtersAtMax) return;
-
-    const next = [...selectedTours, tourId];
-    setSelectedTours(next);
-    setPopup(null);
-    fitMapToSelection(selectedGroups, next);
-  };
-
-  const removeTour = (tourId) => {
-    const next = selectedTours.filter((id) => id !== tourId);
-    setSelectedTours(next);
-    setPopup(null);
-    if (selectedGroups.length > 0 || next.length > 0) {
-      fitMapToSelection(selectedGroups, next);
+    if (next.length > 0) {
+      fitMapToSelection(next, null);
     }
   };
 
   const clearFilters = () => {
     setSelectedGroups([]);
-    setSelectedTours([]);
     setPopup(null);
   };
 
-  const hutTourRoles = useMemo(() => {
-    const roles = new Map();
-    for (const tourId of selectedTours) {
-      const tour = MAP_TOURS_BY_ID[tourId];
-      if (!tour) continue;
-      for (const id of tour.optionalHutIds) {
-        if (!roles.has(id)) roles.set(id, "optional");
-      }
-      for (const id of tour.officialHutIds) {
-        roles.set(id, "official");
-      }
-    }
-    return roles;
-  }, [selectedTours]);
+  // When a tour is focused from TourList: clear mountain groups and fit the map.
+  useEffect(() => {
+    setHoveredPlace(null);
+    if (!focusedTourId) return;
+    setSelectedGroups([]);
+    setPopup(null);
+    // Wait a tick so the map container is laid out after scroll.
+    const id = requestAnimationFrame(() =>
+      fitMapToSelection([], focusedTourId),
+    );
+    return () => cancelAnimationFrame(id);
+  }, [focusedTourId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedFilterHuts = useMemo(() => {
-    if (selectedGroups.length === 0 && selectedTours.length === 0) return [];
-    return collectFilterHuts(selectedGroups, selectedTours);
-  }, [selectedGroups, selectedTours, huts]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (selectedGroups.length === 0 && !focusedTourId) return [];
+    return collectFilterHuts(selectedGroups, focusedTourId);
+  }, [selectedGroups, focusedTourId, huts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const bookableFilterHuts = useMemo(
     () => selectedFilterHuts.filter((h) => h.hutReservationId),
@@ -587,6 +662,35 @@ export default function HutsMap() {
     availCacheTick,
   ]);
 
+  /** Hut id → share of nights with enough beds (mountain-group filter only). */
+  const filterAvailRatioByHutId = useMemo(() => {
+    const ratios = new Map();
+    if (selectedGroups.length === 0 || !dateFrom || !dateTo) return ratios;
+
+    for (const hut of bookableFilterHuts) {
+      const cached = getAvailCache(
+        availCacheRef.current,
+        String(hut.hutReservationId),
+      );
+      const ratio = hutAvailabilityRatio(
+        cached,
+        dateFrom,
+        dateTo,
+        bedsNeeded,
+      );
+      if (ratio != null) ratios.set(hut.id, ratio);
+    }
+    return ratios;
+  }, [
+    selectedGroups.length,
+    bookableFilterHuts,
+    dateFrom,
+    dateTo,
+    bedsNeeded,
+    filterAvailVersion,
+    availCacheTick,
+  ]);
+
   useEffect(() => {
     if (!popup || popup.type !== "hut" || !popup.hutReservationId) return;
     const id = popup.hutReservationId;
@@ -644,15 +748,11 @@ export default function HutsMap() {
     if (!edges || hutsRef.current.length === 0) return [];
 
     const groups = selectedGroupsRef.current;
-    const tours = selectedToursRef.current;
-    const tourHutIds = new Set();
-    for (const tourId of tours) {
-      const tour = MAP_TOURS_BY_ID[tourId];
-      if (!tour) continue;
-      for (const id of tour.officialHutIds) tourHutIds.add(id);
-      for (const id of tour.optionalHutIds) tourHutIds.add(id);
-    }
-    const hasFilters = groups.length > 0 || tours.length > 0;
+    const tour = focusedTourIdRef.current
+      ? MAP_TOURS_BY_ID[focusedTourIdRef.current]
+      : null;
+    const tourHutIds = new Set(tour?.officialHutIds ?? []);
+    const hasFilters = groups.length > 0 || tourHutIds.size > 0;
     const hutMatches = (hut) =>
       !hasFilters ||
       groups.includes(hut.gebirgsgruppe) ||
@@ -781,7 +881,7 @@ export default function HutsMap() {
       features: buildEdgeFeatures(),
     });
     if (popup?.type === "edge") setPopup(null);
-  }, [selectedGroups, selectedTours, buildEdgeFeatures]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedGroups, focusedTourId, buildEdgeFeatures]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch huts
   useEffect(() => {
@@ -1039,372 +1139,97 @@ export default function HutsMap() {
           </button>
         </div>
       )}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: isMobile ? 10 : 40,
-          marginBottom: 8,
-        }}
-      >
-        {/* Hut search */}
-        <div ref={searchRef} style={{ position: "relative" }}>
-          <input
-            type="text"
-            placeholder="Search huts…"
-            value={hutSearch}
-            onChange={(e) => {
-              setHutSearch(e.target.value);
-              setSearchOpen(true);
-            }}
-            onFocus={() => hutSearch.trim() && setSearchOpen(true)}
-            style={{
-              padding: "4px 8px",
-              border: "1px solid var(--huts-ctrl-border, #ccc)",
-              borderRadius: 4,
-              fontSize: "0.85em",
-              width: isMobile ? "100%" : 180,
-              background: "#fff",
-            }}
-          />
-          {searchOpen && searchResults.length > 0 && (
-            <ul
-              style={{
-                position: "absolute",
-                top: "calc(100% + 4px)",
-                left: 0,
-                width: 260,
-                background: "var(--huts-dropdown-bg, #fff)",
-                border: "1px solid var(--huts-dropdown-border, #ddd)",
-                borderRadius: 4,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-                margin: 0,
-                padding: 0,
-                listStyle: "none",
-                zIndex: 3000,
-                maxHeight: 280,
-                overflowY: "auto",
-              }}
-            >
-              {searchResults.map((h) => (
-                <li
-                  key={h.id}
-                  onClick={() => selectHutFromSearch(h)}
-                  className="huts-search-item"
-                  style={{
-                    padding: "7px 12px",
-                    cursor: "pointer",
-                    fontSize: "0.85em",
-                    borderBottom: "1px solid var(--huts-dropdown-border, #f0f0f0)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {h.name}
-                  </span>
-                  <span
-                    style={{
-                      color: "#bbb",
-                      flexShrink: 0,
-                      fontSize: "0.82em",
-                      textAlign: "right",
-                    }}
-                  >
-                    {h.gebirgsgruppe && (
-                      <span style={{ display: "block", color: "#ccc" }}>
-                        {h.gebirgsgruppe}
-                      </span>
-                    )}
-                    <span style={{ display: "block" }}>{h.elevation}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className={guideStyles.steps}>
+        <section
+          className={`${guideStyles.step} ${guideStyles.stepExplore} ${guideStyles.stepCentered}`}
+          aria-labelledby="guide-explore"
+        >
+          <div className={guideStyles.stepHeader}>
+            <span className={guideStyles.stepNum}>1</span>
+            <h2 id="guide-explore" className={guideStyles.stepTitle}>
+              Explore &amp; filter
+            </h2>
+          </div>
+          <ul className={guideStyles.stepList}>
+            <li>
+              <div className={guideStyles.bulletLine}>
+                <span className={guideStyles.bulletLabel}>Map:</span>
+                Get info by clicking on huts &amp; routes inbetween them
+              </div>
+            </li>
+            <li>
+              <div className={guideStyles.bulletLine}>
+                <span className={guideStyles.bulletLabel}>Tours table:</span>
+                <a href="#tour-examples">Browse itineraries</a>
+              </div>
+            </li>
+            <li>
+              <div className={guideStyles.bulletText}>
+                <span className={guideStyles.bulletLabel}>Filters:</span>
+                {" Set your max date range & required beds "}
+                <GuideInfoIcon text="The hut popups use the selected date and beds for showing availabilities." />
+                {", and mountain groups "}
+                <GuideInfoIcon text="Select mountain groups to get a quick overview of how many nights each online-bookable hut still has with enough beds in your date range." />
+                {" on the map"}
+              </div>
+            </li>
+          </ul>
+        </section>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            width: isMobile ? "100%" : "auto",
-            maxWidth: isMobile ? "100%" : 420,
-          }}
+        <section
+          className={`${guideStyles.step} ${guideStyles.stepPlan} ${guideStyles.stepCentered}`}
+          aria-labelledby="guide-plan"
         >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: "0.85em",
-              color: "var(--huts-ctrl-muted, #555)",
-              width: "100%",
-            }}
-          >
-            Mountain groups:
-            <select
-              value=""
-              onChange={(e) => {
-                addMountainGroup(e.target.value);
-                e.target.value = "";
-              }}
-              disabled={filtersAtMax}
-              style={{
-                minWidth: 190,
-                maxWidth: isMobile ? "100%" : 260,
-                flex: 1,
-                padding: "4px 8px",
-                border: "1px solid var(--huts-ctrl-border, #ccc)",
-                borderRadius: 4,
-                fontSize: "inherit",
-                color: "var(--huts-ctrl-text, #333)",
-                background: "#fff",
-              }}
+          <div className={guideStyles.stepHeader}>
+            <span className={guideStyles.stepNum}>2</span>
+            <h2 id="guide-plan" className={guideStyles.stepTitle}>
+              Plan
+            </h2>
+          </div>
+          <div className={guideStyles.stepBody}>
+            <p className={guideStyles.stepLead}>Decided on your route?</p>
+            <p className={guideStyles.stepCopy}>
+              Select it here to check all online availability in a single view:
+            </p>
+            <button
+              type="button"
+              className={guideStyles.planButton}
+              onClick={() => setShowPlanTour(true)}
             >
-              <option value="">
-                {selectedGroups.length === 0 && selectedTours.length === 0
-                  ? "All mountain groups"
-                  : filtersAtMax
-                    ? `Max ${MAX_SELECTED_FILTERS} filters`
-                    : "Add mountain group…"}
-              </option>
-              {mountainGroups
-                .filter((group) => !selectedGroups.includes(group))
-                .map((group) => (
-                  <option key={group} value={group}>
-                    {group}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: "0.85em",
-              color: "var(--huts-ctrl-muted, #555)",
-              width: "100%",
-            }}
-          >
-            Tours:
-            <select
-              value=""
-              onChange={(e) => {
-                addTour(e.target.value);
-                e.target.value = "";
-              }}
-              disabled={filtersAtMax}
-              style={{
-                minWidth: 190,
-                maxWidth: isMobile ? "100%" : 260,
-                flex: 1,
-                padding: "4px 8px",
-                border: "1px solid var(--huts-ctrl-border, #ccc)",
-                borderRadius: 4,
-                fontSize: "inherit",
-                color: "var(--huts-ctrl-text, #333)",
-                background: "#fff",
-              }}
-            >
-              <option value="">
-                {selectedTours.length === 0 && selectedGroups.length === 0
-                  ? "All tours"
-                  : filtersAtMax
-                    ? `Max ${MAX_SELECTED_FILTERS} filters`
-                    : "Add tour…"}
-              </option>
-              {MAP_TOURS.filter((tour) => !selectedTours.includes(tour.id)).map(
-                (tour) => (
-                  <option key={tour.id} value={tour.id}>
-                    {tour.title}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
-          {(selectedGroups.length > 0 || selectedTours.length > 0) && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 6,
-                alignItems: "center",
-              }}
-            >
-              {selectedGroups.map((group) => (
-                <button
-                  key={group}
-                  type="button"
-                  onClick={() => removeMountainGroup(group)}
-                  title={`Remove ${group}`}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "3px 8px",
-                    border: "1px solid var(--huts-ctrl-border, #ccc)",
-                    borderRadius: 4,
-                    background: "#fff",
-                    color: "var(--huts-ctrl-text, #333)",
-                    fontSize: "0.8em",
-                    cursor: "pointer",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: groupColorMap.current[group] ?? "#888",
-                      flexShrink: 0,
-                    }}
-                  />
-                  {group}
-                  <span aria-hidden style={{ opacity: 0.55 }}>
-                    ×
-                  </span>
-                </button>
-              ))}
-              {selectedTours.map((tourId) => {
-                const tour = MAP_TOURS_BY_ID[tourId];
-                return (
-                  <button
-                    key={tourId}
-                    type="button"
-                    onClick={() => removeTour(tourId)}
-                    title={`Remove ${tour?.title ?? tourId}`}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "3px 8px",
-                      border: "1px solid #7a9bb8",
-                      borderRadius: 4,
-                      background: "#f3f7fb",
-                      color: "var(--huts-ctrl-text, #333)",
-                      fontSize: "0.8em",
-                      cursor: "pointer",
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 2,
-                        background: "#3d6f99",
-                        flexShrink: 0,
-                      }}
-                    />
-                    {tour?.title ?? tourId}
-                    <span aria-hidden style={{ opacity: 0.55 }}>
-                      ×
-                    </span>
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={clearFilters}
-                style={{
-                  border: "none",
-                  background: "none",
-                  color: "var(--huts-ctrl-muted, #555)",
-                  fontSize: "0.8em",
-                  cursor: "pointer",
-                  padding: "2px 4px",
-                  textDecoration: "underline",
-                }}
-              >
-                Clear
-              </button>
-              {filterAvailLoading && (
-                <span
-                  style={{
-                    fontSize: "0.78em",
-                    color: "var(--huts-ctrl-muted, #555)",
-                  }}
-                >
-                  Checking availability…
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+              Plan tour
+            </button>
+            <p className={guideStyles.circleNote}>
+              <span className={guideStyles.circleIcon} aria-hidden />
+              Availability not known? Check the hut&apos;s website
+              <GuideInfoIcon text={CIRCLE_HUT_BOOKING_TIP} />
+            </p>
+          </div>
+        </section>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
+        <section
+          className={`${guideStyles.step} ${guideStyles.stepBook} ${guideStyles.stepCentered}`}
+          aria-labelledby="guide-book"
         >
-          <DateRangePicker
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            onChange={(from, to) => {
-              setDateFrom(from);
-              setDateTo(to);
-            }}
-          />
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              fontSize: "0.85em",
-              color: "var(--huts-ctrl-muted, #555)",
-            }}
-          >
-            Beds:
-            <input
-              type="number"
-              min="1"
-              max="99"
-              value={bedsNeeded}
-              onChange={(e) =>
-                setBedsNeeded(Math.max(1, parseInt(e.target.value) || 1))
-              }
-              style={{
-                width: 48,
-                padding: "3px 5px",
-                border: "1px solid var(--huts-ctrl-border, #ccc)",
-                borderRadius: 4,
-                fontSize: "0.85em",
-                background: "#fff",
-              }}
-            />
-          </label>
-        </div>
-        <button
-          onClick={() => setShowPlanTour(true)}
-          style={{
-            marginLeft: 16,
-            padding: "4px 12px",
-            fontSize: "0.85em",
-            borderRadius: 4,
-            border: "1px solid #0070f3",
-            background: "#0070f3",
-            color: "#fff",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Plan tour
-        </button>
+          <div className={guideStyles.stepHeader}>
+            <span className={guideStyles.stepNum}>3</span>
+            <h2 id="guide-book" className={guideStyles.stepTitle}>
+              Book
+            </h2>
+          </div>
+          <div className={guideStyles.stepBody}>
+            <p className={guideStyles.stepLead}>Almost there!</p>
+            <p className={guideStyles.bookNote}>
+              <span className={guideStyles.diamondIcon} aria-hidden />
+              Follow the link to directly book online!
+              <GuideInfoIcon text={DIAMOND_HUT_BOOKING_TIP} />
+            </p>
+            <p className={guideStyles.bookNote}>
+              <span className={guideStyles.circleIcon} aria-hidden />
+              Book custom huts via the agreed upon method
+              <GuideInfoIcon text={CIRCLE_HUT_BOOKING_TIP} />
+            </p>
+          </div>
+        </section>
       </div>
 
       {showPlanTour && (
@@ -1423,26 +1248,37 @@ export default function HutsMap() {
 
       <div
         ref={containerRef}
+        className={guideStyles.mapFrame}
         style={{
           position: "relative",
           width: "100%",
-          height: isMobile ? "min(500px, calc(100dvh - 260px))" : "calc(100dvh - 320px)",
-          border: isMobile && mapInteractive ? "1px solid #0070f3" : "1px solid #ddd",
+          height: isMobile ? "min(500px, calc(100dvh - 260px))" : "calc(100dvh - 420px)",
+          border: "none",
+          borderRadius: 10,
           boxShadow:
             isMobile && mapInteractive
-              ? "0 0 0 2px rgba(0, 112, 243, 0.2)"
+              ? "0 0 0 2px rgba(0, 112, 243, 0.35)"
               : undefined,
         }}
       >
         <div
-          ref={mapContainer}
           style={{
-            width: "100%",
-            height: "100%",
-            // Give MapLibre full control of one- and two-finger gestures in move mode.
-            touchAction: isMobile && mapInteractive ? "none" : "auto",
+            position: "absolute",
+            inset: 0,
+            borderRadius: 10,
+            overflow: "hidden",
           }}
-        />
+        >
+          <div
+            ref={mapContainer}
+            style={{
+              width: "100%",
+              height: "100%",
+              // Give MapLibre full control of one- and two-finger gestures in move mode.
+              touchAction: isMobile && mapInteractive ? "none" : "auto",
+            }}
+          />
+        </div>
 
         {isMobile && (
           <button
@@ -1457,7 +1293,7 @@ export default function HutsMap() {
               padding: "8px 14px",
               borderRadius: 8,
               border: "1px solid rgba(0,0,0,0.12)",
-              background: mapInteractive ? "#0070f3" : "rgba(255,255,255,0.95)",
+              background: mapInteractive ? "#1e3a5f" : "rgba(255,255,255,0.95)",
               color: mapInteractive ? "#fff" : "#222",
               fontSize: "0.85em",
               fontWeight: 600,
@@ -1500,7 +1336,7 @@ export default function HutsMap() {
                   borderRadius: 4,
                   border: "1px solid #aaa",
                   background:
-                    mapStyle === key ? "#0070f3" : "rgba(255,255,255,0.9)",
+                    mapStyle === key ? "#1e3a5f" : "rgba(255,255,255,0.9)",
                   color: mapStyle === key ? "#fff" : "#333",
                   cursor: "pointer",
                   fontWeight: mapStyle === key ? 600 : 400,
@@ -1528,12 +1364,149 @@ export default function HutsMap() {
           )}
         </div>
 
+        {focusedTour && (
+          <div className={guideStyles.tourItineraryNote}>
+            These itineraries are a starting point, not a fixed plan! Combine or
+            split stages, join or leave along the way, and shape the route
+            around your preferences and hut availability.
+          </div>
+        )}
+
+        <div className={guideStyles.mapToolbar}>
+          <div className={guideStyles.mapToolbarRow}>
+            <div className={guideStyles.mapCtrl}>
+              <DateRangePicker
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onChange={(from, to) => {
+                  setDateFrom(from);
+                  setDateTo(to);
+                }}
+              />
+            </div>
+            <label
+              className={`${guideStyles.controlLabel} ${guideStyles.mapCtrl}`}
+              title="Beds needed"
+            >
+              Beds
+              <input
+                type="number"
+                min="1"
+                max="99"
+                inputMode="numeric"
+                aria-label="Beds needed"
+                value={bedsNeeded}
+                onChange={(e) =>
+                  setBedsNeeded(Math.max(1, parseInt(e.target.value) || 1))
+                }
+                className={guideStyles.bedsInput}
+              />
+            </label>
+            <select
+              className={`${guideStyles.groupSelect} ${guideStyles.mapCtrl}`}
+              value=""
+              onChange={(e) => {
+                addMountainGroup(e.target.value);
+                e.target.value = "";
+              }}
+              disabled={filtersAtMax}
+            >
+              <option value="">
+                {selectedGroups.length === 0
+                  ? "Add mountain group…"
+                  : filtersAtMax
+                    ? `Max ${MAX_SELECTED_FILTERS}`
+                    : "Add mountain group…"}
+              </option>
+              {mountainGroups
+                .filter((group) => !selectedGroups.includes(group))
+                .map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
+            </select>
+          </div>
+          {selectedGroups.length > 0 && (
+            <div className={guideStyles.selectedGroups}>
+              {selectedGroups.map((group) => (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => removeMountainGroup(group)}
+                  title={`Remove ${group}`}
+                  className={guideStyles.groupChip}
+                >
+                  <span
+                    className={guideStyles.groupChipDot}
+                    style={{
+                      background: groupColorMap.current[group] ?? "#888",
+                    }}
+                  />
+                  {group}
+                  <span aria-hidden style={{ opacity: 0.55 }}>
+                    ×
+                  </span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className={guideStyles.clearLink}
+              >
+                Clear
+              </button>
+              {filterAvailLoading && (
+                <span className={guideStyles.availStatus}>
+                  Checking availability…
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div ref={searchRef} className={guideStyles.mapSearch}>
+          <input
+            type="text"
+            placeholder="Search huts by name..."
+            value={hutSearch}
+            onChange={(e) => {
+              setHutSearch(e.target.value);
+              setSearchOpen(true);
+            }}
+            onFocus={() => hutSearch.trim() && setSearchOpen(true)}
+            className={guideStyles.mapSearchInput}
+          />
+          {searchOpen && searchResults.length > 0 && (
+            <ul className={guideStyles.mapSearchResults}>
+              {searchResults.map((h) => (
+                <li
+                  key={h.id}
+                  onClick={() => selectHutFromSearch(h)}
+                  className="huts-search-item"
+                >
+                  <span className={guideStyles.mapSearchName}>{h.name}</span>
+                  <span className={guideStyles.mapSearchMeta}>
+                    {h.gebirgsgruppe && (
+                      <span className={guideStyles.mapSearchGroup}>
+                        {h.gebirgsgruppe}
+                      </span>
+                    )}
+                    <span>{h.elevation}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {loading && (
           <div
             style={{
               position: "absolute",
-              top: 8,
-              left: 8,
+              top: 48,
+              right: 8,
+              zIndex: 12,
               background: "rgba(255,255,255,0.8)",
               padding: "4px 8px",
               borderRadius: 4,
@@ -1556,29 +1529,93 @@ export default function HutsMap() {
           }}
         >
           {mapRef.current &&
+            focusedTour?.places?.map((place) => {
+              const { x, y } = mapRef.current.project([place.lon, place.lat]);
+              const showLabel = hoveredPlace === place.name;
+              return (
+                <div
+                  key={place.name}
+                  onMouseEnter={() => setHoveredPlace(place.name)}
+                  onMouseLeave={() => setHoveredPlace(null)}
+                  style={{
+                    position: "absolute",
+                    left: x,
+                    top: y,
+                    transform: "translate(-50%, -100%)",
+                    zIndex: 5,
+                    pointerEvents: "auto",
+                    cursor: "default",
+                    padding: "4px 8px 0",
+                    marginTop: -4,
+                  }}
+                >
+                  {showLabel && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "50%",
+                        bottom: "100%",
+                        transform: "translateX(-50%)",
+                        marginBottom: 2,
+                        padding: "3px 7px",
+                        borderRadius: 4,
+                        background: "rgba(20,20,20,0.9)",
+                        color: "#fff",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        pointerEvents: "none",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                      }}
+                    >
+                      {place.name}
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.35))",
+                      lineHeight: 0,
+                    }}
+                  >
+                    <MapPin
+                      size={28}
+                      fill="#5c6570"
+                      color="#5c6570"
+                      strokeWidth={1.25}
+                      style={{ display: "block", pointerEvents: "none" }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+          {mapRef.current &&
             huts.map((h, i) => {
               const { x, y } = mapRef.current.project([h.lon, h.lat]);
               const hasFilters =
-                selectedGroups.length > 0 || selectedTours.length > 0;
+                selectedGroups.length > 0 || focusedTourHutIds.size > 0;
               const matchesGroup =
                 selectedGroups.length > 0 &&
                 selectedGroups.includes(h.gebirgsgruppe);
-              const tourRole = hutTourRoles.get(h.id) ?? null;
-              const matchesTour = tourRole != null;
+              const matchesTour = focusedTourHutIds.has(h.id);
               const isSelected =
                 !hasFilters || matchesGroup || matchesTour;
-              const isOfficial = tourRole === "official";
-              const isOptional = tourRole === "optional";
-              const dimOptional = isOptional && !matchesGroup;
               const inPlan = tourSelectedHuts.find((s) => s.id === h.id);
               const isSoldOut = soldOutFilterHutIds.has(h.id);
+              const availRatio = filterAvailRatioByHutId.get(h.id);
+              const showAvailOutline =
+                matchesGroup &&
+                h.hutReservationId &&
+                availRatio != null &&
+                !inPlan;
 
               let outline;
-              if (inPlan) outline = "3px solid #0070f3";
-              else if (isOfficial && !isSoldOut)
-                outline = "2px solid rgba(20,20,20,0.55)";
-              else if (isOptional && !isSoldOut)
-                outline = "2px dashed #c4c4c4";
+              if (inPlan) outline = "3px solid #555";
+              else if (showAvailOutline)
+                outline = `2.5px solid ${availabilityOutlineColor(availRatio)}`;
+
+              const availPct =
+                availRatio != null ? Math.round(availRatio * 100) : null;
 
               return (
                 <div
@@ -1595,20 +1632,18 @@ export default function HutsMap() {
                     openHutPopup(h);
                   }}
                   title={
-                    isSoldOut
-                      ? `${h.name} (no ${bedsNeeded}+ bed night in date range)`
-                      : isOfficial
-                        ? `${h.name} (official tour hut)`
-                        : isOptional
-                          ? `${h.name} (optional tour hut)`
-                          : h.name
+                    showAvailOutline
+                      ? `${h.name} (${availPct}% of nights have ${bedsNeeded}+ beds)`
+                      : isSoldOut
+                        ? `${h.name} (no ${bedsNeeded}+ bed night in date range)`
+                        : h.name
                   }
                   style={{
                     position: "absolute",
-                    left: x - (dimOptional ? 6 : 8),
-                    top: y - (dimOptional ? 6 : 8),
-                    width: dimOptional ? 12 : 16,
-                    height: dimOptional ? 12 : 16,
+                    left: x - 8,
+                    top: y - 8,
+                    width: 16,
+                    height: 16,
                     borderRadius: h.hutReservationId ? "0" : "50%",
                     transform: h.hutReservationId ? "rotate(45deg)" : undefined,
                     background: isSoldOut
@@ -1619,9 +1654,10 @@ export default function HutsMap() {
                     outlineOffset: "2px",
                     cursor: "pointer",
                     pointerEvents: "auto",
-                    opacity: !isSelected ? 0.12 : dimOptional ? 0.55 : 1,
-                    zIndex: isSelected ? (isOfficial ? 3 : 2) : 1,
-                    transition: "opacity 180ms ease, background 180ms ease",
+                    opacity: !isSelected ? 0.28 : 1,
+                    zIndex: isSelected ? (showAvailOutline ? 3 : 2) : 1,
+                    transition:
+                      "opacity 180ms ease, background 180ms ease, outline-color 180ms ease",
                   }}
                 />
               );
@@ -1648,7 +1684,7 @@ export default function HutsMap() {
       >
         <div
           className="legend-tooltip"
-          data-tooltip="Up-to-date availabilities are shown for these huts, with the date range based on the date picker above. They are easily bookable via the hut-reservation.org link in the popup."
+          data-tooltip="Up-to-date availabilities are shown for these huts, with the date range based on the date picker on the map. They are easily bookable via the hut-reservation.org link in the popup."
           style={{ display: "flex", alignItems: "center", gap: 6 }}
         >
           <div
@@ -1682,48 +1718,72 @@ export default function HutsMap() {
           />
           Book directly with the hut
         </div>
-        {selectedTours.length > 0 && (
-          <>
+        {focusedTour?.places?.length > 0 && (
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 4 }}
+            title="Common start & end points for this tour"
+          >
+            <MapPin
+              size={16}
+              fill="#5c6570"
+              color="#5c6570"
+              strokeWidth={1.25}
+            />
+            Access point
+          </div>
+        )}
+        {selectedGroups.length > 0 && filterAvailRatioByHutId.size > 0 && (
+          <div
+            className="legend-tooltip"
+            data-tooltip={`Outline (continuous scale): share of nights in your date range with ${bedsNeeded}+ free beds, from green (all) through yellow (half) to red (none). If a hut has no free night at all, the diamond turns black.`}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
             <div
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
-              title="Core overnight huts on the selected tour(s)"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "2px 4px 2px 2px",
+              }}
             >
               <div
                 style={{
                   width: 12,
                   height: 12,
-                  borderRadius: "50%",
-                  background: "#888",
-                  border: "2px solid #fff",
-                  outline: "2px solid rgba(20,20,20,0.55)",
-                  outlineOffset: 1,
+                  padding: 2.5,
+                  background: `linear-gradient(135deg, ${availabilityOutlineColor(1)}, ${availabilityOutlineColor(0.5)}, ${availabilityOutlineColor(0)})`,
+                  transform: "rotate(45deg)",
                   flexShrink: 0,
+                  boxSizing: "content-box",
                 }}
-              />
-              Official tour hut
-            </div>
-            <div
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
-              title="Variant, lunch stop, or nearby extension on the selected tour(s)"
-            >
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    background: "#888",
+                    border: "2px solid #fff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
               <div
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: "#888",
+                  width: 12,
+                  height: 12,
+                  background: "#111",
                   border: "2px solid #fff",
-                  outline: "2px dashed #c4c4c4",
+                  outline: `2.5px solid ${availabilityOutlineColor(0)}`,
                   outlineOffset: 1,
-                  opacity: 0.55,
+                  transform: "rotate(45deg)",
                   flexShrink: 0,
                 }}
               />
-              Optional tour hut
             </div>
-          </>
+            Availability outline
+          </div>
         )}
-        {soldOutFilterHutIds.size > 0 && (
+        {soldOutFilterHutIds.size > 0 && selectedGroups.length === 0 && (
           <div
             style={{ display: "flex", alignItems: "center", gap: 6 }}
             title={`No night in the selected date range has ${bedsNeeded}+ free beds`}

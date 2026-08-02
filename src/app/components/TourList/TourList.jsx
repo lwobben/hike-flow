@@ -13,16 +13,15 @@ const LEVEL_STYLE = {
   Advanced: "advanced",
 };
 
-/** Mountain ranges from MAP_TOURS hut gebirgsgruppe + bundesland. */
+/** Mountain groups from MAP_TOURS hut gebirgsgruppe + bundesland. */
 const TOURS = [
   {
     id: "verwall",
     title: "Verwall tour",
     description:
       "Expansive trail network through remote alpine valleys with many route variations",
-    mountainRanges: ["Verwallgruppe (Tirol / Vorarlberg)"],
-    start: "St. Anton am Arlberg",
-    end: "Ischgl or Schruns",
+    mountainGroups: ["Verwallgruppe (Tirol / Vorarlberg)"],
+    accessPoints: ["St. Christoph", "Pettneu", "St. Anton"],
     days: "5/6/8",
     heaviness: "Variable",
     level: "Intermediate–Advanced",
@@ -34,9 +33,8 @@ const TOURS = [
     title: "Around the Bischofsmütze",
     description:
       "Compact three-day circuit around a dramatic rock spire through meadows and rock faces",
-    mountainRanges: ["Dachsteingebirge (Oberösterreich / Salzburg)"],
-    start: "Filzmoos",
-    end: "Filzmoos",
+    mountainGroups: ["Dachsteingebirge (Oberösterreich / Salzburg)"],
+    accessPoints: ["Filzmoos"],
     days: "3",
     heaviness: "Medium",
     level: "Intermediate",
@@ -47,9 +45,8 @@ const TOURS = [
     title: "Karwendel tour",
     description:
       "Dramatic gorges and wild limestone peaks through one of Austria's finest hiking areas",
-    mountainRanges: ["Karwendel (Tirol)"],
-    start: "Vomp",
-    end: "Vomp",
+    mountainGroups: ["Karwendel (Tirol)"],
+    accessPoints: ["Pertisau", "Eng", "Scharnitz", "Vomp"],
     days: "5",
     heaviness: "Heavy",
     level: "Advanced",
@@ -60,9 +57,8 @@ const TOURS = [
     title: "Stubaier Höhenweg",
     description:
       "Nine-day circuit with over 8,600 m of total elevation gain through the Stubai Alps",
-    mountainRanges: ["Stubaier Alpen (Tirol)"],
-    start: "Neustift im Stubaital",
-    end: "Neustift im Stubaital",
+    mountainGroups: ["Stubaier Alpen (Tirol)"],
+    accessPoints: ["Neustift", "Fulpmes"],
     days: "7",
     heaviness: "Heavy",
     level: "Advanced",
@@ -73,12 +69,11 @@ const TOURS = [
     title: "Venediger–Lasörling Höhenweg",
     description:
       "High-alpine traverse past 300+ three-thousanders in the Hohe Tauern National Park",
-    mountainRanges: [
+    mountainGroups: [
       "Venedigergruppe (Salzburg / Tirol)",
       "Lasörlinggruppe (Tirol)",
     ],
-    start: "Matreier Tauernhaus",
-    end: "Virgen",
+    accessPoints: ["Matreier Tauernhaus", "Prägraten", "Virgen", "Matrei"],
     days: "9",
     heaviness: "Very Heavy",
     level: "Advanced",
@@ -89,9 +84,8 @@ const TOURS = [
     title: "Rätikon tour",
     description:
       "Five-day trek through meadows, waterfalls and a small glacier across a tri-border region",
-    mountainRanges: ["Rätikon (Vorarlberg / Schweiz / Liechtenstein)"],
-    start: "Brand",
-    end: "Latschau",
+    mountainGroups: ["Rätikon (Vorarlberg / Schweiz / Liechtenstein)"],
+    accessPoints: ["Brand", "Latschau"],
     days: "5",
     heaviness: "Medium",
     level: "Intermediate",
@@ -102,12 +96,11 @@ const TOURS = [
     title: "Glocknerrunde",
     description:
       "Demanding circuit around Austria's highest peak with big daily elevation gains",
-    mountainRanges: [
-      "Glocknergruppe (Kärnten)",
+    mountainGroups: [
+      "Glocknergruppe (Kärnten / Salzburg / Tirol)",
       "Granatspitzgruppe (Tirol)",
     ],
-    start: "Bruck a.d. Glocknerstraße",
-    end: "Bruck a.d. Glocknerstraße",
+    accessPoints: ["Kaprun", "Kals", "Heiligenblut", "Fusch"],
     days: "7",
     heaviness: "Very Heavy",
     level: "Advanced",
@@ -118,9 +111,8 @@ const TOURS = [
     title: "Schladminger Tauern",
     description:
       "High-route dotted with countless lakes and waterfalls through water-rich alpine terrain",
-    mountainRanges: ["Schladminger Tauern (Salzburg / Steiermark)"],
-    start: "Schladming",
-    end: "Schladming",
+    mountainGroups: ["Schladminger Tauern (Salzburg / Steiermark)"],
+    accessPoints: ["Schladming", "Rohrmoos"],
     days: "5",
     heaviness: "Medium",
     level: "Intermediate",
@@ -131,12 +123,11 @@ const TOURS = [
     title: "Peter Habeler Runde",
     description:
       "Circuit through the western Zillertal from flower meadows and moraines to glacial terrain",
-    mountainRanges: [
+    mountainGroups: [
       "Zillertaler Alpen (Tirol / Italien/Südtirol)",
       "Tuxer Alpen (Tirol)",
     ],
-    start: "Mayrhofen",
-    end: "Mayrhofen",
+    accessPoints: ["Ginzling", "Schlegeis", "Hintertux", "Mayrhofen"],
     days: "6–7",
     heaviness: "Medium",
     level: "Intermediate",
@@ -147,9 +138,8 @@ const TOURS = [
     title: "Tannheimer Bergen",
     description:
       "Family-friendly ridge walk above a picturesque valley with gentle 2,000 m summits",
-    mountainRanges: ["Allgäuer Alpen (Tirol)"],
-    start: "Tannheim",
-    end: "Tannheim",
+    mountainGroups: ["Allgäuer Alpen (Tirol)"],
+    accessPoints: ["Tannheim", "Nesselwängle", "Grän"],
     days: "varies",
     heaviness: "Light–Medium",
     level: "Beginner–Intermediate",
@@ -158,14 +148,14 @@ const TOURS = [
   },
 ];
 
-function MountainRanges({ ranges, className }) {
-  if (ranges.length === 1) {
-    return <div className={className}>{ranges[0]}</div>;
+function BulletList({ items, className }) {
+  if (items.length === 1) {
+    return <div className={className}>{items[0]}</div>;
   }
   return (
     <ul className={className}>
-      {ranges.map((range) => (
-        <li key={range}>{range}</li>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
       ))}
     </ul>
   );
@@ -198,12 +188,6 @@ function LevelBadge({ level }) {
       {level}
     </span>
   );
-}
-
-function routeEndpoints(tour) {
-  return tour.start === tour.end
-    ? `Start & end: ${tour.start}`
-    : `Start: ${tour.start} · End: ${tour.end}`;
 }
 
 function stagesLabel(days) {
@@ -288,9 +272,21 @@ function DaysHeader() {
   );
 }
 
-export default function TourList() {
+function ViewOnMapButton({ tour, focused, onViewOnMap }) {
   return (
-    <section className={styles.section}>
+    <button
+      type="button"
+      className={focused ? styles.viewOnMapActive : styles.viewOnMap}
+      onClick={() => onViewOnMap?.(tour.id)}
+    >
+      {focused ? "Hide from map" : "View in map above"}
+    </button>
+  );
+}
+
+export default function TourList({ focusedTourId = null, onViewOnMap }) {
+  return (
+    <section id="tour-examples" className={styles.section}>
       <div className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Some examples</p>
@@ -315,23 +311,28 @@ export default function TourList() {
               <span className={styles.mobileTitle}>{tour.title}</span>
               <TourSourceLink tour={tour} />
             </div>
-            {tour.mountainRanges.length === 1 ? (
+            <ViewOnMapButton
+              tour={tour}
+              focused={focusedTourId === tour.id}
+              onViewOnMap={onViewOnMap}
+            />
+            {tour.mountainGroups.length === 1 ? (
               <p className={styles.mobileSubline}>
-                {tour.mountainRanges[0]} · {stagesLabel(tour.days)}
+                {tour.mountainGroups[0]} · {stagesLabel(tour.days)}
               </p>
             ) : (
               <div className={styles.mobileSubline}>
-                <MountainRanges
-                  ranges={tour.mountainRanges}
-                  className={styles.mobileMountainRanges}
+                <BulletList
+                  items={tour.mountainGroups}
+                  className={styles.mobileMountainGroups}
                 />
                 <span>{stagesLabel(tour.days)}</span>
               </div>
             )}
             <p className={styles.mobileDescription}>{tour.description}</p>
             <p className={styles.mobileMeta}>
-              {routeEndpoints(tour)} · Effort: {tour.heaviness} · Level:{" "}
-              {tour.level}
+              Access: {tour.accessPoints.join(", ")} · Effort: {tour.heaviness}{" "}
+              · Level: {tour.level}
             </p>
           </li>
         ))}
@@ -346,9 +347,8 @@ export default function TourList() {
               <th>
                 <DaysHeader />
               </th>
-              <th>Mountain range</th>
-              <th>Start</th>
-              <th>End</th>
+              <th>Mountain group</th>
+              <th>Most common start &amp; end points</th>
               <th>Effort</th>
               <th>Level</th>
             </tr>
@@ -358,18 +358,29 @@ export default function TourList() {
               <tr key={tour.id} data-tour-id={tour.id}>
                 <td className={styles.tourName}>
                   <div>{tour.title}</div>
-                  <TourSourceLink tour={tour} />
+                  <div className={styles.tourActions}>
+                    <ViewOnMapButton
+                      tour={tour}
+                      focused={focusedTourId === tour.id}
+                      onViewOnMap={onViewOnMap}
+                    />
+                    <TourSourceLink tour={tour} />
+                  </div>
                 </td>
                 <td className={styles.description}>{tour.description}</td>
                 <td className={styles.days}>{tour.days}</td>
                 <td>
-                  <MountainRanges
-                    ranges={tour.mountainRanges}
-                    className={styles.mountainRanges}
+                  <BulletList
+                    items={tour.mountainGroups}
+                    className={styles.mountainGroups}
                   />
                 </td>
-                <td>{tour.start}</td>
-                <td>{tour.end}</td>
+                <td>
+                  <BulletList
+                    items={tour.accessPoints}
+                    className={styles.accessPoints}
+                  />
+                </td>
                 <td>{tour.heaviness}</td>
                 <td>
                   <LevelBadge level={tour.level} />

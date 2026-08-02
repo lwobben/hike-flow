@@ -1,0 +1,531 @@
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 28px;
+  margin-bottom: 12px;
+  align-items: stretch;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 10px;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Line through each title badge — stays inside the shape (gap between boxes). */
+.step::after {
+  content: "";
+  position: absolute;
+  top: 31px;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: rgba(0, 0, 0, 0.14);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.stepExplore {
+  background: linear-gradient(165deg, #f4f7fa 0%, #e4ebf2 100%);
+}
+
+.stepPlan {
+  background: linear-gradient(165deg, #f3f8f4 0%, #dceee2 100%);
+}
+
+.stepBook {
+  background: linear-gradient(165deg, #f7f4f0 0%, #ebe3d8 100%);
+}
+
+.stepHeader {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: center;
+  width: fit-content;
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+
+.stepExplore .stepHeader {
+  background: #d8e0ea;
+}
+
+.stepPlan .stepHeader {
+  background: #cfe5d7;
+}
+
+.stepBook .stepHeader {
+  background: #e0d6c8;
+}
+
+.stepNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1f2937;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.stepTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.stepList {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 0 0 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.58);
+  list-style: disc;
+}
+
+.stepList > li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 2px;
+}
+
+.bulletLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.bulletLabel {
+  font-weight: 650;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+.bulletText {
+  min-width: 0;
+}
+
+.bulletLine .bulletText {
+  flex: 1 1 12rem;
+}
+
+.infoWrap {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.infoIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.3);
+  font-size: 9px;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.4);
+  cursor: help;
+  line-height: 1;
+  font-weight: 600;
+  font-family: Georgia, serif;
+  flex-shrink: 0;
+}
+
+.tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  max-width: 260px;
+  background: #1a1a1a;
+  color: #f0f0f0;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border-radius: 7px;
+  font-weight: 400;
+  white-space: normal;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.stepList a {
+  color: #3a6f9a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.stepList a:hover {
+  color: #2a5578;
+}
+
+.mapFrame :global(.maplibregl-ctrl-top-right) {
+  top: 52px;
+}
+
+.mapFrame :global(.maplibregl-ctrl-top-right .maplibregl-ctrl) {
+  margin: 0 8px 0 0;
+}
+
+.tourItineraryNote {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
+  width: min(520px, calc(100% - 200px));
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.62);
+  text-align: center;
+  pointer-events: none;
+}
+
+.mapToolbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100% - 230px);
+  pointer-events: none;
+}
+
+.mapToolbar > * {
+  pointer-events: auto;
+}
+
+.mapToolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.mapSearch {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 12;
+  width: 200px;
+  max-width: calc(50% - 12px);
+}
+
+.mapSearchInput,
+.mapCtrl {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mapSearchInput {
+  padding: 7px 10px;
+  font-size: 0.85em;
+  width: 100%;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.mapCtrl {
+  padding: 3px 6px;
+}
+
+.mapCtrl button {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 3px 4px !important;
+}
+
+.mapSearchResults {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 100%;
+  min-width: 260px;
+  background: var(--huts-dropdown-bg, #fff);
+  border: 1px solid var(--huts-dropdown-border, #ddd);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  z-index: 3000;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.mapSearchResults li {
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.85em;
+  border-bottom: 1px solid var(--huts-dropdown-border, #f0f0f0);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+}
+
+.mapSearchName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapSearchMeta {
+  color: #bbb;
+  flex-shrink: 0;
+  font-size: 0.82em;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.mapSearchGroup {
+  display: block;
+  color: #ccc;
+}
+
+.groupSelect {
+  min-width: 160px;
+  max-width: 220px;
+  padding: 7px 10px;
+  font-size: 0.85em;
+  color: var(--huts-ctrl-text, #333);
+  appearance: auto;
+}
+
+.selectedGroups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  max-width: 100%;
+}
+
+.groupChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--huts-ctrl-border, #ccc);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--huts-ctrl-text, #333);
+  font-size: 0.8em;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.groupChipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.controlLabel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.85em;
+  color: var(--huts-ctrl-muted, #555);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.bedsInput {
+  width: 3.2em;
+  padding: 3px 2px;
+  border: 1px solid var(--huts-ctrl-border, #ccc);
+  border-radius: 4px;
+  font-size: 0.85em;
+  background: #fff;
+}
+
+.mapCtrl .bedsInput {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.clearLink {
+  border: none;
+  background: none;
+  color: var(--huts-ctrl-muted, #555);
+  font-size: 0.8em;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-decoration: underline;
+}
+
+.clearLink:hover {
+  color: #333;
+}
+
+.availStatus {
+  font-size: 0.78em;
+  color: var(--huts-ctrl-muted, #555);
+}
+
+.stepCentered .stepList {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+}
+
+.stepCentered .stepList > li {
+  padding-left: 0;
+  align-items: center;
+}
+
+.stepCentered .bulletLine {
+  justify-content: center;
+}
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  text-align: center;
+}
+
+.stepLead {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.78);
+  line-height: 1.4;
+}
+
+.stepCopy {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.58);
+}
+
+.planButton {
+  margin-top: 4px;
+  padding: 4px 12px;
+  font-size: 0.82em;
+  line-height: 1.2;
+  border-radius: 6px;
+  border: 1px solid #4a8a66;
+  background: linear-gradient(165deg, #6aad84 0%, #4d8f6a 100%);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.planButton:hover {
+  background: linear-gradient(165deg, #5f9d78 0%, #3f7a59 100%);
+  border-color: #3f7a59;
+}
+
+.circleNote,
+.bookNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.bookNote {
+  gap: 8px;
+}
+
+.circleNote {
+  margin-top: 8px;
+}
+
+.circleIcon,
+.diamondIcon {
+  width: 10px;
+  height: 10px;
+  background: #888;
+  border: 2px solid #fff;
+  outline: 1px solid #888;
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+
+.bookNote .circleIcon,
+.bookNote .diamondIcon {
+  margin: 2px 4px;
+}
+
+.circleIcon {
+  border-radius: 50%;
+}
+
+.diamondIcon {
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+@media (max-width: 960px) {
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .step::after {
+    display: none;
+  }
+
+  .tourItineraryNote {
+    width: calc(100% - 16px);
+    left: 8px;
+    transform: none;
+    bottom: 52px;
+  }
+
+  .mapToolbar {
+    max-width: calc(100% - 16px);
+  }
+
+  .mapSearch {
+    max-width: calc(100% - 16px);
+  }
+}

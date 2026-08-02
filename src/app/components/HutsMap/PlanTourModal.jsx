@@ -192,11 +192,6 @@ export default function PlanTourModal({
           <span style={{ fontWeight: 700, fontSize: "0.9em" }}>
             {step === "setup" ? "Plan tour" : "Availability Overview"}
           </span>
-          {step === "setup" && (
-            <span style={{ color: "#999", fontSize: "0.78em" }}>
-              Click huts on the map or use the search above
-            </span>
-          )}
           {step === "matrix" && (
             <button
               onClick={() => setStep("setup")}
@@ -335,8 +330,8 @@ export default function PlanTourModal({
                 </div>
               </div>
             ) : (
-              <p style={{ color: "#bbb", fontSize: "0.8em", margin: "0 0 10px" }}>
-                Click huts on the map or use the search above to add them.
+              <p style={{ color: "#999", fontSize: "0.8em", margin: "0 0 10px" }}>
+                Click on the huts on the map (or use the search) to add them to the tour.
               </p>
             )}
           </div>
@@ -348,7 +343,7 @@ export default function PlanTourModal({
               marginTop: 12,
               padding: "7px 20px",
               background:
-                selectedHuts.length === 0 || !dateRangeValid ? "#ccc" : "#0070f3",
+                selectedHuts.length === 0 || !dateRangeValid ? "#ccc" : "#1e3a5f",
               color: "#fff",
               border: "none",
               borderRadius: 4,
