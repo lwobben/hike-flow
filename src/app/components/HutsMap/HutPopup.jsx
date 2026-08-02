@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe } from "lucide-react";
+import { Globe, MapPin, Route } from "lucide-react";
 
 function formatMinutes(minutes) {
   if (minutes == null) return "?";
@@ -71,9 +71,63 @@ export default function HutPopup({
               {popup.bundesland ? ` (${popup.bundesland})` : ""}
             </div>
           )}
+          {popup.lat != null && popup.lon != null && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 2,
+                fontSize: "0.85em",
+              }}
+            >
+              <a
+                href={`https://www.google.com/maps?q=${popup.lat},${popup.lon}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in Google Maps"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  height: 28,
+                  padding: "0 8px",
+                  borderRadius: 6,
+                  border: "1px solid #ddd",
+                  background: "#fafafa",
+                  color: "#333",
+                  textDecoration: "none",
+                }}
+              >
+                <MapPin size={15} />
+                Google
+              </a>
+              <a
+                href={`https://hiking.waymarkedtrails.org/#search?query=${popup.lat},%20${popup.lon}&map=15/${popup.lat}/${popup.lon}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Detailed trail map"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  height: 28,
+                  padding: "0 8px",
+                  borderRadius: 6,
+                  border: "1px solid #ddd",
+                  background: "#fafafa",
+                  color: "#333",
+                  textDecoration: "none",
+                }}
+              >
+                <Route size={15} />
+                Trails
+              </a>
+            </div>
+          )}
           {(popup.link ||
             popup.websites?.length > 0 ||
-            (popup.lat != null && popup.lon != null)) && (
+            popup.hutReservationId) && (
             <div
               style={{
                 fontSize: "0.7em",
@@ -121,16 +175,6 @@ export default function HutPopup({
                 </a>
               ))}
             </div>
-          )}
-          {popup.lat != null && popup.lon != null && (
-            <a
-              href={`https://hiking.waymarkedtrails.org/#search?query=${popup.lat},%20${popup.lon}&map=15/${popup.lat}/${popup.lon}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "#0070f3", display: "block", marginBottom: 4 }}
-            >
-              • Detailed trail map
-            </a>
           )}
           {popup.hutReservationId && (
             <a
