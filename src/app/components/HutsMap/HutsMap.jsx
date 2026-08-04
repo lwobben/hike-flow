@@ -662,10 +662,15 @@ export default function HutsMap({
     availCacheTick,
   ]);
 
-  /** Hut id → share of nights with enough beds (mountain-group filter only). */
+  /** Hut id → share of nights with enough beds (when groups or a tour are selected). */
   const filterAvailRatioByHutId = useMemo(() => {
     const ratios = new Map();
-    if (selectedGroups.length === 0 || !dateFrom || !dateTo) return ratios;
+    if (
+      (selectedGroups.length === 0 && !focusedTourId) ||
+      !dateFrom ||
+      !dateTo
+    )
+      return ratios;
 
     for (const hut of bookableFilterHuts) {
       const cached = getAvailCache(
@@ -683,6 +688,7 @@ export default function HutsMap({
     return ratios;
   }, [
     selectedGroups.length,
+    focusedTourId,
     bookableFilterHuts,
     dateFrom,
     dateTo,
@@ -763,10 +769,10 @@ export default function HutsMap({
         const from = hutsById[e.from];
         const to = hutsById[e.to];
         if (!from || !to) return null;
-        if (!hutMatches(from) || !hutMatches(to)) return null;
+        const selected = hutMatches(from) && hutMatches(to) ? 1 : 0;
         return {
           type: "Feature",
-          properties: { from: e.from, to: e.to },
+          properties: { from: e.from, to: e.to, selected },
           geometry: {
             type: "LineString",
             coordinates: curvedCoords(from, to),
@@ -819,7 +825,13 @@ export default function HutsMap({
         paint: {
           "line-color": "#555",
           "line-width": 2,
-          "line-opacity": 0.7,
+          // Full opacity when both ends are in the selection; dim otherwise (like unselected huts)
+          "line-opacity": [
+            "case",
+            ["==", ["get", "selected"], 1],
+            0.7,
+            0.2,
+          ],
           "line-dasharray": dashSequence[0],
         },
       });
@@ -1604,7 +1616,7 @@ export default function HutsMap({
               const isSoldOut = soldOutFilterHutIds.has(h.id);
               const availRatio = filterAvailRatioByHutId.get(h.id);
               const showAvailOutline =
-                matchesGroup &&
+                (matchesGroup || matchesTour) &&
                 h.hutReservationId &&
                 availRatio != null &&
                 !inPlan;
@@ -1732,7 +1744,7 @@ export default function HutsMap({
             Access point
           </div>
         )}
-        {selectedGroups.length > 0 && filterAvailRatioByHutId.size > 0 && (
+        {filterAvailRatioByHutId.size > 0 && (
           <div
             className="legend-tooltip"
             data-tooltip={`Outline (continuous scale): share of nights in your date range with ${bedsNeeded}+ free beds, from green (all) through yellow (half) to red (none). If a hut has no free night at all, the diamond turns black.`}
@@ -1783,7 +1795,7 @@ export default function HutsMap({
             Availability outline
           </div>
         )}
-        {soldOutFilterHutIds.size > 0 && selectedGroups.length === 0 && (
+        {soldOutFilterHutIds.size > 0 && filterAvailRatioByHutId.size === 0 && (
           <div
             style={{ display: "flex", alignItems: "center", gap: 6 }}
             title={`No night in the selected date range has ${bedsNeeded}+ free beds`}
