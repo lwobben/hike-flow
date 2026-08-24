@@ -184,12 +184,64 @@
   color: #2a5578;
 }
 
+.mapCanvasLayer {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.markerOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .mapFrame :global(.maplibregl-ctrl-top-right) {
   top: 52px;
 }
 
 .mapFrame :global(.maplibregl-ctrl-top-right .maplibregl-ctrl) {
   margin: 0 8px 0 0;
+}
+
+.mapTopChrome {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.mapTopChrome > * {
+  pointer-events: auto;
+}
+
+.mapMoveBtn {
+  display: none;
+  align-self: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+  color: #222;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+}
+
+.mapMoveBtnActive {
+  background: #1e3a5f;
+  color: #fff;
 }
 
 .tourItineraryNote {
@@ -212,20 +264,12 @@
 }
 
 .mapToolbar {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 12;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
   max-width: calc(100% - 230px);
-  pointer-events: none;
-}
-
-.mapToolbar > * {
-  pointer-events: auto;
+  min-width: 0;
 }
 
 .mapToolbarRow {
@@ -237,12 +281,10 @@
 }
 
 .mapSearch {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 12;
+  position: relative;
   width: 200px;
   max-width: calc(50% - 12px);
+  flex-shrink: 0;
 }
 
 .mapSearchInput,
@@ -521,11 +563,30 @@
     bottom: 52px;
   }
 
+  .mapTopChrome {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .mapToolbar {
-    max-width: calc(100% - 16px);
+    max-width: 100%;
+    width: 100%;
   }
 
   .mapSearch {
-    max-width: calc(100% - 16px);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .mapMoveBtn {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+  }
+
+  .mapFrame :global(.maplibregl-ctrl-top-right) {
+    top: auto;
+    bottom: 52px;
+    right: 0;
   }
 }

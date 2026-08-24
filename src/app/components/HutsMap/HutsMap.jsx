@@ -407,7 +407,9 @@ export default function HutsMap({
 
   useEffect(() => {
     // Touch phones/tablets need the lock; desktop mouse/trackpad should always pan freely.
-    const mq = window.matchMedia("(max-width: 767px) and (hover: none)");
+    const mq = window.matchMedia(
+      "(max-width: 767px) and ((hover: none) or (pointer: coarse))",
+    );
     const sync = () => {
       const mobile = mq.matches;
       setIsMobile(mobile);
@@ -1273,14 +1275,7 @@ export default function HutsMap({
               : undefined,
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: 10,
-            overflow: "hidden",
-          }}
-        >
+        <div className={guideStyles.mapCanvasLayer}>
           <div
             ref={mapContainer}
             style={{
@@ -1291,32 +1286,6 @@ export default function HutsMap({
             }}
           />
         </div>
-
-        {isMobile && (
-          <button
-            type="button"
-            onClick={() => setMapInteractive((v) => !v)}
-            style={{
-              position: "absolute",
-              top: 8,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 12,
-              padding: "8px 14px",
-              borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.12)",
-              background: mapInteractive ? "#1e3a5f" : "rgba(255,255,255,0.95)",
-              color: mapInteractive ? "#fff" : "#222",
-              fontSize: "0.85em",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {mapInteractive ? "Done moving map" : "Move map"}
-          </button>
-        )}
 
         <div
           style={{
@@ -1384,7 +1353,8 @@ export default function HutsMap({
           </div>
         )}
 
-        <div className={guideStyles.mapToolbar}>
+        <div className={guideStyles.mapTopChrome}>
+          <div className={guideStyles.mapToolbar}>
           <div className={guideStyles.mapToolbarRow}>
             <div className={guideStyles.mapCtrl}>
               <DateRangePicker
@@ -1512,6 +1482,19 @@ export default function HutsMap({
           )}
         </div>
 
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setMapInteractive((v) => !v)}
+            className={`${guideStyles.mapMoveBtn} ${
+              mapInteractive ? guideStyles.mapMoveBtnActive : ""
+            }`}
+          >
+            {mapInteractive ? "Done moving map" : "Move map"}
+          </button>
+        )}
+        </div>
+
         {loading && (
           <div
             style={{
@@ -1529,17 +1512,7 @@ export default function HutsMap({
           </div>
         )}
 
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            overflow: "hidden",
-          }}
-        >
+        <div className={guideStyles.markerOverlay}>
           {mapRef.current &&
             focusedTour?.places?.map((place) => {
               const { x, y } = mapRef.current.project([place.lon, place.lat]);
